@@ -54,6 +54,7 @@ export default function Pantry() {
       <ul>
         {items.map(item => (
           <li key={item.id}>
+            console.log(item)
             {"chris"} — {item.quantity}
           </li>
         ))}

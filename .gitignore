@@ -7,6 +7,9 @@ pnpm-debug.log*
 package-lock.json
 
 # Vite build output
+node_modules
+dist
+
 dist/
 *.local
 

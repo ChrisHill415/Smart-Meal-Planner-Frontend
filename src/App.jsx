@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import Login from './Login'
-import Pantry from './Pantry'
+import Login from './login'
+import Pantry from './pantry'
 import Recipes from './Recipes'
 
 export default function App() {

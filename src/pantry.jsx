@@ -54,7 +54,7 @@ export default function Pantry() {
       <ul>
         {items.map(item => (
           <li key={item.id}>
-            {"chris"} — {item.quantity}
+            {item.text} — {item.quantity}
           </li>
         ))}
       </ul>

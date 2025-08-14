@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import axios from 'axios';
+import Recipes from './Recipes'; // <-- import the new component
 
 export default function Pantry() {
   const [items, setItems] = useState([]);
@@ -9,59 +10,29 @@ export default function Pantry() {
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
 
-  // Fetch pantry items on load
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  useEffect(() => fetchItems(), []);
 
   async function fetchItems() {
-    const { data, error } = await supabase
-      .from('pantry')
-      .select('*')
-      .order('id', { ascending: true });
-
+    const { data, error } = await supabase.from('pantry').select('*').order('id', { ascending: true });
     if (error) setError(error.message);
     else setItems(data);
   }
 
-  // Add items (merge duplicates)
   async function addItem(e) {
     e.preventDefault();
     setError(null);
-    if (!item || !quantity) {
-      setError('Please enter both name and quantity.');
-      return;
-    }
+    if (!item || !quantity) return setError('Enter both name and quantity.');
 
     const normalizedItem = item.trim().toLowerCase();
 
-    // Check if item exists
-    const { data: existingItems, error: fetchError } = await supabase
-      .from('pantry')
-      .select('*')
-      .ilike('item', normalizedItem);
-
-    if (fetchError) {
-      setError(fetchError.message);
-      return;
-    }
+    const { data: existingItems } = await supabase.from('pantry').select('*').ilike('item', normalizedItem);
 
     if (existingItems.length > 0) {
       const existing = existingItems[0];
       const newQuantity = Number(existing.quantity) + Number(quantity);
-
-      const { error: updateError } = await supabase
-        .from('pantry')
-        .update({ quantity: newQuantity })
-        .eq('id', existing.id);
-
-      if (updateError) setError(updateError.message);
+      await supabase.from('pantry').update({ quantity: newQuantity }).eq('id', existing.id);
     } else {
-      const { error: insertError } = await supabase
-        .from('pantry')
-        .insert([{ item, quantity }]);
-
-      if (insertError) setError(insertError.message);
+      await supabase.from('pantry').insert([{ item, quantity }]);
     }
 
     setItem('');
@@ -69,41 +40,22 @@ export default function Pantry() {
     fetchItems();
   }
 
-  // Remove items with dropdown
   async function removeItem(itemName, removeQty) {
     setError(null);
 
-    const { data, error } = await supabase
-      .from('pantry')
-      .select('*')
-      .ilike('item', itemName)
-      .single();
-
-    if (error) {
-      setError(error.message);
-      return;
-    }
+    const { data, error } = await supabase.from('pantry').select('*').ilike('item', itemName).single();
+    if (error) return setError(error.message);
 
     const newQuantity = Number(data.quantity) - removeQty;
 
-    if (newQuantity > 0) {
-      await supabase
-        .from('pantry')
-        .update({ quantity: newQuantity })
-        .eq('id', data.id);
-    } else {
-      await supabase.from('pantry').delete().eq('id', data.id);
-    }
+    if (newQuantity > 0) await supabase.from('pantry').update({ quantity: newQuantity }).eq('id', data.id);
+    else await supabase.from('pantry').delete().eq('id', data.id);
 
     fetchItems();
   }
 
-  // Get recipes from OpenRouter get-oss-20b
   async function handleGetRecipes() {
-    if (items.length === 0) {
-      setRecipes('Add some pantry items first!');
-      return;
-    }
+    if (items.length === 0) return setRecipes([{ title: 'Add pantry items first', ingredients: [], instructions: '' }]);
 
     const pantryList = items.map((i) => i.item);
     const prompt = `I have the following ingredients: ${pantryList.join(
@@ -115,47 +67,37 @@ export default function Pantry() {
         'https://openrouter.ai/api/v1/completions',
         {
           model: 'get-oss-20b',
-          prompt: prompt,
+          prompt,
           max_tokens: 1000,
-          temperature: 0.7
+          temperature: 0.7,
         },
         {
           headers: {
             Authorization: `Bearer YOUR_OPENROUTER_API_KEY`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       const text = response.data.choices[0].text;
 
-      // Try to parse JSON
       try {
-        const parsed = JSON.parse(text);
-        setRecipes(parsed);
-      } catch (err) {
+        setRecipes(JSON.parse(text));
+      } catch {
         setRecipes([{ title: 'AI Response', ingredients: [], instructions: text }]);
       }
-
     } catch (err) {
       console.error(err);
       setRecipes([{ title: 'Error', ingredients: [], instructions: 'Failed to fetch recipes.' }]);
     }
   }
 
-  // Group and sort pantry items
+  // Group and sort pantry
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
-      if (!acc[name]) {
-        acc[name] = {
-          id: curr.id,
-          name: curr.item,
-          quantity: Number(curr.quantity) || 0
-        };
-      } else {
-        acc[name].quantity += Number(curr.quantity) || 0;
-      }
+      if (!acc[name]) acc[name] = { id: curr.id, name: curr.item, quantity: Number(curr.quantity) || 0 };
+      else acc[name].quantity += Number(curr.quantity) || 0;
       return acc;
     }, {})
   ).sort((a, b) => a.name.localeCompare(b.name));
@@ -188,18 +130,8 @@ export default function Pantry() {
       </ul>
 
       <form onSubmit={addItem} style={{ marginTop: '20px' }}>
-        <input
-          type="text"
-          placeholder="Item name"
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+        <input type="text" placeholder="Item name" value={item} onChange={(e) => setItem(e.target.value)} />
+        <input type="text" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <button type="submit">Add Item</button>
       </form>
 
@@ -207,24 +139,8 @@ export default function Pantry() {
         <button onClick={handleGetRecipes}>Get Recipes</button>
       </div>
 
-      {recipes.length > 0 && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Suggested Recipes:</h3>
-          {recipes.map((r, idx) => (
-            <div key={idx} style={{ marginBottom: '15px' }}>
-              <h4>{r.title}</h4>
-              {r.ingredients && r.ingredients.length > 0 && (
-                <p>
-                  <strong>Ingredients:</strong> {r.ingredients.join(', ')}
-                </p>
-              )}
-              <p>
-                <strong>Instructions:</strong> {r.instructions}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Use Recipes.jsx for display */}
+      <Recipes recipes={recipes} />
     </div>
   );
 }

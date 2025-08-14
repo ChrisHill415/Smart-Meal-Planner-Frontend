@@ -79,6 +79,46 @@ async function addItem(e) {
   fetchItems();
 }
 
+async function removeItem(item) {
+  setError(null);
+
+  // Ask the user how much to remove
+  const input = prompt(`Enter quantity of "${item.item}" to remove:`);
+
+  if (input === null) return; // user canceled
+
+  const removeQty = Number(input);
+
+  if (isNaN(removeQty) || removeQty <= 0) {
+    alert('Please enter a valid number greater than 0.');
+    return;
+  }
+
+  const newQuantity = Number(item.quantity) - removeQty;
+
+  if (newQuantity > 0) {
+    // Update quantity
+    const { error } = await supabase
+      .from('pantry')
+      .update({ quantity: newQuantity })
+      .eq('id', item.id);
+
+    if (error) setError(error.message);
+  } else {
+    // Remove entire row
+    const { error } = await supabase
+      .from('pantry')
+      .delete()
+      .eq('id', item.id);
+
+    if (error) setError(error.message);
+  }
+
+  fetchItems(); // refresh list
+}
+
+
+
 
 return (
   <div>
@@ -90,7 +130,8 @@ return (
           const name = curr.item.trim().toLowerCase(); // normalize case
           if (!acc[name]) {
             acc[name] = {
-              name: curr.item, // original name
+              id: curr.id,          // store id for remove
+              name: curr.item,      // original name
               quantity: Number(curr.quantity) || 0,
             };
           } else {
@@ -101,11 +142,18 @@ return (
       )
       .sort((a, b) => a.name.localeCompare(b.name)) // alphabetical
       .map(grouped => (
-        <li key={grouped.name}>
+        <li key={grouped.id}>
           {grouped.name} — {grouped.quantity}
+          <button
+            onClick={() => removeItem(grouped)}
+            style={{ marginLeft: '10px', color: 'red' }}
+          >
+            Remove
+          </button>
         </li>
       ))}
     </ul>
+
     <form onSubmit={addItem}>
       <input
         type="text"

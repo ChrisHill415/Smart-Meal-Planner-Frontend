@@ -1,1 +1,32 @@
+.login-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px; /* space between inputs and buttons */
+}
+
+.login-container input {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-container button {
+  padding: 6px 12px;
+  border: none;
+  background-color: #4cafef;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background-color: #3a9bdc;
+}
+
+.error-text {
+  color: red;
+  margin-left: 10px;
+}
 

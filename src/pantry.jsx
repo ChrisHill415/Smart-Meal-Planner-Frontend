@@ -25,27 +25,60 @@ export default function Pantry() {
     }
   }
 
-  async function addItem(e) {
-    e.preventDefault()
-    setError(null)
+async function addItem(e) {
+  e.preventDefault();
+  setError(null);
 
-    if (!item || !quantity) {
-      setError('Please enter both name and quantity.')
-      return
-    }
+  if (!item || !quantity) {
+    setError('Please enter both name and quantity.');
+    return;
+  }
 
-    const { data, error } = await supabase
+  const normalizedItem = item.trim().toLowerCase();
+
+  // 1. Check if the item already exists
+  const { data: existingItems, error: fetchError } = await supabase
+    .from('pantry')
+    .select('*')
+    .ilike('item', normalizedItem); // case-insensitive search
+
+  if (fetchError) {
+    setError(fetchError.message);
+    return;
+  }
+
+  if (existingItems.length > 0) {
+    // 2. If exists, update quantity
+    const existing = existingItems[0];
+    const newQuantity = Number(existing.quantity) + Number(quantity);
+
+    const { error: updateError } = await supabase
       .from('pantry')
-      .insert([{ item, quantity }])
+      .update({ quantity: newQuantity })
+      .eq('id', existing.id);
 
-    if (error) {
-      setError(error.message)
-    } else {
-      setItem('')
-      setQuantity('')
-      fetchItems() // refresh list
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+  } else {
+    // 3. If not exists, insert new
+    const { error: insertError } = await supabase
+      .from('pantry')
+      .insert([{ item, quantity }]);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
     }
   }
+
+  // 4. Reset form and refresh
+  setItem('');
+  setQuantity('');
+  fetchItems();
+}
+
 
 return (
   <div>

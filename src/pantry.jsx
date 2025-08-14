@@ -127,32 +127,57 @@ return (
     <ul>
       {Object.values(
         items.reduce((acc, curr) => {
-          const name = curr.item.trim().toLowerCase(); // normalize case
+          const name = curr.item.trim().toLowerCase();
           if (!acc[name]) {
-            acc[name] = {
-              id: curr.id,          // store id for remove
-              name: curr.item,      // original name
-              quantity: Number(curr.quantity) || 0,
-            };
-          } else {
-            acc[name].quantity += Number(curr.quantity) || 0;
-          }
-          return acc;
-        }, {})
-      )
-      .sort((a, b) => a.name.localeCompare(b.name)) // alphabetical
-      .map(grouped => (
-        <li key={grouped.id}>
-          {grouped.name} — {grouped.quantity}
-          <button
-            onClick={() => removeItem(grouped)}
-            style={{ marginLeft: '10px', color: 'red' }}
-          >
-            Remove
-          </button>
-        </li>
-      ))}
-    </ul>
+        acc[name] = {
+          id: curr.id,
+          name: curr.item,
+          quantity: Number(curr.quantity) || 0,
+        };
+      } else {
+        acc[name].quantity += Number(curr.quantity) || 0;
+      }
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(grouped => (
+      <li key={grouped.id} style={{ marginBottom: "8px" }}>
+        {grouped.name} — {grouped.quantity}{" "}
+        <select
+          onChange={async (e) => {
+            const removeQty = Number(e.target.value);
+            if (removeQty === 0) return; // ignore "Remove..." placeholder
+
+            const newQuantity = grouped.quantity - removeQty;
+
+            if (newQuantity > 0) {
+              await supabase
+                .from("pantry")
+                .update({ quantity: newQuantity })
+                .eq("id", grouped.id);
+            } else {
+              await supabase
+                .from("pantry")
+                .delete()
+                .eq("id", grouped.id);
+            }
+            fetchItems();
+          }}
+        >
+          <option value={0}>Remove...</option>
+          {Array.from({ length: grouped.quantity }, (_, i) => i + 1).map(
+            (num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            )
+          )}
+        </select>
+      </li>
+    ))}
+</ul>
+
 
     <form onSubmit={addItem}>
       <input

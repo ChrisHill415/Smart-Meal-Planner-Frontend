@@ -52,11 +52,12 @@ export default function Pantry() {
       <h2>Pantry Items</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <ul>
-        {items.map(item => (
-          <li key={item.id}>
-            {item.text} — {item.quantity}
+        {items.map(pantryItem => (
+          <li key={pantryItem.id}>
+            {pantryItem.item} — {pantryItem.quantity}
           </li>
         ))}
+
       </ul>
       <form onSubmit={addItem}>
         <input

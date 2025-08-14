@@ -47,33 +47,48 @@ export default function Pantry() {
     }
   }
 
-  return (
-    <div>
-      <h2>Pantry Items</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <ul>
-        {items.map(pantryItem => (
-          <li key={pantryItem.id}>
-            {pantryItem.item} — {pantryItem.quantity}
-          </li>
-        ))}
+return (
+  <div>
+    <h2>Pantry Items</h2>
+    {error && <p style={{ color: 'red' }}>{error}</p>}
+    <ul>
+      {Object.values(
+        items.reduce((acc, curr) => {
+          const name = curr.item.trim().toLowerCase(); // normalize case
+          if (!acc[name]) {
+            acc[name] = {
+              name: curr.item, // original name
+              quantity: Number(curr.quantity) || 0,
+            };
+          } else {
+            acc[name].quantity += Number(curr.quantity) || 0;
+          }
+          return acc;
+        }, {})
+      )
+      .sort((a, b) => a.name.localeCompare(b.name)) // alphabetical
+      .map(grouped => (
+        <li key={grouped.name}>
+          {grouped.name} — {grouped.quantity}
+        </li>
+      ))}
+    </ul>
+    <form onSubmit={addItem}>
+      <input
+        type="text"
+        placeholder="Item name"
+        value={item}
+        onChange={e => setItem(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Quantity"
+        value={quantity}
+        onChange={e => setQuantity(e.target.value)}
+      />
+      <button type="submit">Add Item</button>
+    </form>
+  </div>
+);
 
-      </ul>
-      <form onSubmit={addItem}>
-        <input
-          type="text"
-          placeholder="Item name"
-          value={item}
-          onChange={e => setItem(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={e => setQuantity(e.target.value)}
-        />
-        <button type="submit">Add Item</button>
-      </form>
-    </div>
-  )
 }

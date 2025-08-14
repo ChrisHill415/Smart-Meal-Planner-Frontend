@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import axios from 'axios';
-import Recipes from './Recipes'; // <-- import the new component
+import Recipes from './Recipes';
 
 export default function Pantry() {
   const [items, setItems] = useState([]);
@@ -9,6 +9,7 @@ export default function Pantry() {
   const [quantity, setQuantity] = useState('');
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => fetchItems(), []);
 
@@ -24,7 +25,6 @@ export default function Pantry() {
     if (!item || !quantity) return setError('Enter both name and quantity.');
 
     const normalizedItem = item.trim().toLowerCase();
-
     const { data: existingItems } = await supabase.from('pantry').select('*').ilike('item', normalizedItem);
 
     if (existingItems.length > 0) {
@@ -42,12 +42,10 @@ export default function Pantry() {
 
   async function removeItem(itemName, removeQty) {
     setError(null);
-
     const { data, error } = await supabase.from('pantry').select('*').ilike('item', itemName).single();
     if (error) return setError(error.message);
 
     const newQuantity = Number(data.quantity) - removeQty;
-
     if (newQuantity > 0) await supabase.from('pantry').update({ quantity: newQuantity }).eq('id', data.id);
     else await supabase.from('pantry').delete().eq('id', data.id);
 
@@ -55,7 +53,13 @@ export default function Pantry() {
   }
 
   async function handleGetRecipes() {
-    if (items.length === 0) return setRecipes([{ title: 'Add pantry items first', ingredients: [], instructions: '' }]);
+    if (items.length === 0) {
+      setRecipes([{ title: 'Add pantry items first', ingredients: [], instructions: '' }]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
 
     const pantryList = items.map((i) => i.item);
     const prompt = `I have the following ingredients: ${pantryList.join(
@@ -63,36 +67,22 @@ export default function Pantry() {
     )}. Suggest 3 easy recipes I can make with them. Return output as JSON array with title, ingredients, and instructions.`;
 
     try {
-      const response = await axios.post(
-        'https://openrouter.ai/api/v1/completions',
-        {
-          model: 'get-oss-20b',
-          prompt,
-          max_tokens: 1000,
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            Authorization: `Bearer YOUR_OPENROUTER_API_KEY`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Call your backend route instead of OpenRouter directly
+      const response = await axios.post('/api/recipes', { prompt });
+      const aiRecipes = response.data.recipes;
 
-      const text = response.data.choices[0].text;
-
-      try {
-        setRecipes(JSON.parse(text));
-      } catch {
-        setRecipes([{ title: 'AI Response', ingredients: [], instructions: text }]);
-      }
+      if (Array.isArray(aiRecipes)) setRecipes(aiRecipes);
+      else setRecipes([{ title: 'AI Response', ingredients: [], instructions: aiRecipes.toString() }]);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch AI recipes:', err);
       setRecipes([{ title: 'Error', ingredients: [], instructions: 'Failed to fetch recipes.' }]);
+      setError('Failed to fetch AI recipes.');
+    } finally {
+      setLoading(false);
     }
   }
 
-  // Group and sort pantry
+  // Group and sort pantry items
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
@@ -136,10 +126,11 @@ export default function Pantry() {
       </form>
 
       <div style={{ marginTop: '30px' }}>
-        <button onClick={handleGetRecipes}>Get Recipes</button>
+        <button onClick={handleGetRecipes} disabled={loading}>
+          {loading ? 'Fetching Recipes...' : 'Get Recipes'}
+        </button>
       </div>
 
-      {/* Use Recipes.jsx for display */}
       <Recipes recipes={recipes} />
     </div>
   );

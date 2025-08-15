@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import axios from "axios";
-import Recipes from "./Recipes";
 
 export default function Pantry() {
   const [items, setItems] = useState([]);
@@ -81,7 +80,7 @@ export default function Pantry() {
 
   async function handleGetRecipes() {
     if (items.length === 0) {
-      setRecipes([{ title: "Add pantry items first", ingredients: [], instructions: "" }]);
+      setRecipes([{ instructions: "Add pantry items first." }]);
       return;
     }
 
@@ -93,23 +92,16 @@ export default function Pantry() {
         "https://smart-meal-planner-backend.onrender.com/api/recipes"
       );
 
-      const aiResponse = response.data.recipes; // backend now returns { recipes: "text..." }
+      const aiResponse = response.data.recipes; // backend returns a string
 
       if (!aiResponse || aiResponse.trim() === "") {
-        setRecipes([{ title: "AI Response", ingredients: [], instructions: "No recipes generated." }]);
+        setRecipes([{ instructions: "No recipes generated." }]);
       } else {
-        // Split into separate recipes if possible
-        const splitRecipes = aiResponse.split(/\n\d+\./).filter((r) => r.trim() !== "");
-        const formatted = splitRecipes.map((text, i) => ({
-          title: `Recipe ${i + 1}`,
-          ingredients: [], // optional: parse if your AI returns structured ingredients
-          instructions: text.trim(),
-        }));
-        setRecipes(formatted);
+        setRecipes([{ instructions: aiResponse }]); // wrap in array for mapping
       }
     } catch (err) {
       console.error("Failed to fetch AI recipes:", err);
-      setRecipes([{ title: "Error", ingredients: [], instructions: "Failed to fetch recipes." }]);
+      setRecipes([{ instructions: "Failed to fetch recipes." }]);
       setError("Failed to fetch AI recipes.");
     } finally {
       setLoading(false);
@@ -132,7 +124,7 @@ export default function Pantry() {
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div>
+    <div style={{ padding: "20px", maxWidth: "800px", margin: "auto" }}>
       <h2>Pantry Items</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -186,9 +178,28 @@ export default function Pantry() {
         </button>
       </div>
 
-      {/* Render Recipes */}
+      {/* Render AI Recipes */}
       {loading && <p>Loading recipes...</p>}
-      {!loading && recipes.length > 0 && <Recipes recipes={recipes} />}
+      {!loading && recipes.length > 0 && (
+        <div style={{ marginTop: "20px" }}>
+          {recipes.map((r, idx) => (
+            <div
+              key={idx}
+              style={{
+                backgroundColor: "#f9f9f9",
+                color: "#000",
+                border: "1px solid #ccc",
+                padding: "15px",
+                marginBottom: "10px",
+                borderRadius: "8px",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {r.instructions}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

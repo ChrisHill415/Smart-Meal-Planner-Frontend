@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Home from "./Home";
+import Home from "./home";
 import { supabase } from "./supabase";
 
 export default function App() {

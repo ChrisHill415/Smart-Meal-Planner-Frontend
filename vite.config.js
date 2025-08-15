@@ -6,6 +6,8 @@ export default defineConfig({
   server: {
     proxy: {
       // Any request to /api will be forwarded to your backend
+      '/pantry': 'https://smart-meal-planner-backend.onrender.com',
+      '/recipes': 'https://smart-meal-planner-backend.onrender.com',
       "/api": {
         target: "https://smart-meal-planner-backend.onrender.com", // Replace with your deployed backend URL
         changeOrigin: true,
@@ -14,4 +16,3 @@ export default defineConfig({
     },
   },
 });
-

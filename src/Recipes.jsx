@@ -1,7 +1,9 @@
 import React from "react";
 
 export default function Recipes({ recipes }) {
-  
+  if (!recipes || recipes.length === 0) {
+    <p>Hope you enjoy!</p>
+  }
 
   return (
     <div style={{ marginTop: "20px" }}>

@@ -10,32 +10,36 @@ export default function Pantry() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch pantry items on load
   useEffect(() => {
     fetchPantryItems();
   }, []);
 
+  // Fetch pantry items from backend
   async function fetchPantryItems() {
     try {
-      const response = await axios.get("/pantry/list");
-      setItems(response.data || []);
+      const res = await axios.get("/pantry/list");
+      setItems(res.data || []);
     } catch (err) {
-      console.error("Failed to fetch pantry items:", err.response?.data || err.message);
+      console.error("Failed to fetch pantry:", err.response?.data || err.message);
       setError("Failed to fetch pantry items.");
     }
   }
 
+  // Add item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
 
-    if (!item || !quantity) {
-      return setError("Enter both name and quantity.");
-    }
+    if (!item || !quantity) return setError("Enter both name and quantity.");
 
     try {
-      const body = { item, quantity: Number(quantity), unit: "" };
-      await axios.post("/pantry/add", body);
+      const body = {
+        item: item.trim(),
+        quantity: Number(quantity),
+        unit: "" // unit is required by backend model
+      };
+      const res = await axios.post("/pantry/add", body);
+      console.log("Added item:", res.data);
       setItem("");
       setQuantity("");
       fetchPantryItems();
@@ -45,6 +49,7 @@ export default function Pantry() {
     }
   }
 
+  // Remove item
   async function removeItem(itemId) {
     setError(null);
     try {
@@ -56,6 +61,7 @@ export default function Pantry() {
     }
   }
 
+  // Get AI recipes
   async function handleGetRecipes() {
     if (items.length === 0) {
       setRecipes([{ title: "Add pantry items first", ingredients: [], instructions: "" }]);
@@ -65,18 +71,21 @@ export default function Pantry() {
     setLoading(true);
     setError(null);
 
+    const pantryList = items.map((i) => i.item);
+    const prompt = `I have the following ingredients: ${pantryList.join(
+      ", "
+    )}. Suggest 3 easy recipes I can make with them. Return as JSON with title, ingredients, instructions.`;
+
     try {
-      const response = await axios.get("/recipes/suggest");
-      const aiRecipes = response.data;
-      if (Array.isArray(aiRecipes)) {
-        setRecipes(aiRecipes);
-      } else {
-        setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes?.toString() || "" }]);
-      }
+      const res = await axios.post("/recipes", { prompt });
+      const aiRecipes = res.data.recipes;
+
+      if (Array.isArray(aiRecipes)) setRecipes(aiRecipes);
+      else setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes?.toString() || "" }]);
     } catch (err) {
-      console.error("Failed to fetch recipes:", err.response?.data || err.message);
+      console.error("Failed to fetch AI recipes:", err.response?.data || err.message);
       setRecipes([{ title: "Error", ingredients: [], instructions: "Failed to fetch recipes." }]);
-      setError("Failed to fetch recipes.");
+      setError("Failed to fetch AI recipes.");
     } finally {
       setLoading(false);
     }
@@ -104,12 +113,7 @@ export default function Pantry() {
         {groupedItems.map((item) => (
           <li key={item.id}>
             {item.name} — {item.quantity}{" "}
-            <button
-              onClick={() => removeItem(item.id)}
-              style={{ marginLeft: "10px" }}
-            >
-              Remove
-            </button>
+            <button onClick={() => removeItem(item.id)}>Remove</button>
           </li>
         ))}
       </ul>
@@ -126,7 +130,6 @@ export default function Pantry() {
           placeholder="Quantity"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
-          min={1}
         />
         <button type="submit">Add Item</button>
       </form>

@@ -3,13 +3,14 @@ import { supabase } from './supabase'
 import Login from './login'
 import Pantry from './pantry'
 import Recipes from './Recipes'
+import Home from "./home";
 
 export default function App() {
   const [user, setUser] = useState(null)
 
   useEffect(() => {
     // Check if user is already logged in
-    const session = supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
     })
 
@@ -24,17 +25,22 @@ export default function App() {
   }, [])
 
   if (!user) {
-    // Show login if no user
-    return <Login />
+    // Show login page or homepage if not logged in
+    return <Home />
   }
 
+  // Show main app if logged in
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
       <h1>Welcome, {user.email}</h1>
       <Pantry />
       <Recipes />
-      {/* You can add a logout button too */}
-      <button onClick={() => supabase.auth.signOut()}>Logout</button>
+      <button
+        onClick={() => supabase.auth.signOut()}
+        style={{ marginTop: "20px" }}
+      >
+        Logout
+      </button>
     </div>
   )
 }

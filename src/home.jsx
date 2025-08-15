@@ -48,21 +48,20 @@ export default function Home() {
           day.
         </p>
         <button
-  onClick={onGetStarted}
-  style={{
-    marginTop: "20px",
-    padding: "10px 20px",
-    fontSize: "1rem",
-    borderRadius: "5px",
-    border: "none",
-    backgroundColor: "#4CAF50",
-    color: "#fff",
-    cursor: "pointer",
-  }}
->
-  Get Started
-</button>
-
+          onClick={handleLogin} // ✅ Fixed
+          style={{
+            marginTop: "20px",
+            padding: "10px 20px",
+            fontSize: "1rem",
+            borderRadius: "5px",
+            border: "none",
+            backgroundColor: "#4CAF50",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Get Started
+        </button>
       </div>
     </div>
   );

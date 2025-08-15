@@ -3,6 +3,8 @@ import axios from "axios";
 import Recipes from "./Recipes";
 
 export default function Pantry() {
+  const BACKEND_URL = "https://smart-meal-planner-backend.onrender.com"; // Full backend URL
+
   const [items, setItems] = useState([]);
   const [item, setItem] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -10,58 +12,62 @@ export default function Pantry() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch pantry items on load
   useEffect(() => {
-    fetchPantryItems();
+    fetchItems();
   }, []);
 
-  // Fetch pantry items from backend
-  async function fetchPantryItems() {
+  // Fetch items from backend
+  async function fetchItems() {
     try {
-      const res = await axios.get("/pantry/list");
-      setItems(res.data || []);
+      const response = await axios.get(`${BACKEND_URL}/pantry/list`);
+      setItems(response.data || []);
+      setError(null);
     } catch (err) {
-      console.error("Failed to fetch pantry:", err.response?.data || err.message);
+      console.error("Failed to fetch pantry items:", err.response?.data || err.message);
       setError("Failed to fetch pantry items.");
     }
   }
 
-  // Add item
+  // Add pantry item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
 
-    if (!item || !quantity) return setError("Enter both name and quantity.");
+    if (!item || !quantity) {
+      return setError("Enter both name and quantity.");
+    }
+
+    const payload = {
+      item: item.trim(),
+      quantity: Number(quantity),
+      unit: "", // Required by FastAPI
+    };
 
     try {
-      const body = {
-        item: item.trim(),
-        quantity: Number(quantity),
-        unit: "" // unit is required by backend model
-      };
-      const res = await axios.post("/pantry/add", body);
-      console.log("Added item:", res.data);
+      await axios.post(`${BACKEND_URL}/pantry/add`, payload);
       setItem("");
       setQuantity("");
-      fetchPantryItems();
+      fetchItems();
     } catch (err) {
       console.error("Failed to add item:", err.response?.data || err.message);
       setError("Failed to add item. Check console for details.");
     }
   }
 
-  // Remove item
+  // Remove pantry item
   async function removeItem(itemId) {
     setError(null);
     try {
-      await axios.delete(`/pantry/remove/${itemId}`);
-      fetchPantryItems();
+      await axios.delete(`${BACKEND_URL}/pantry/remove/${itemId}`);
+      fetchItems();
     } catch (err) {
       console.error("Failed to remove item:", err.response?.data || err.message);
-      setError("Failed to remove item. Check console for details.");
+      setError("Failed to remove item.");
     }
   }
 
-  // Get AI recipes
+  // Fetch AI recipes
   async function handleGetRecipes() {
     if (items.length === 0) {
       setRecipes([{ title: "Add pantry items first", ingredients: [], instructions: "" }]);
@@ -74,14 +80,14 @@ export default function Pantry() {
     const pantryList = items.map((i) => i.item);
     const prompt = `I have the following ingredients: ${pantryList.join(
       ", "
-    )}. Suggest 3 easy recipes I can make with them. Return as JSON with title, ingredients, instructions.`;
+    )}. Suggest 3 easy recipes I can make with them. Return output as JSON array with "title", "ingredients", and "instructions".`;
 
     try {
-      const res = await axios.post("/recipes", { prompt });
-      const aiRecipes = res.data.recipes;
+      const response = await axios.post(`${BACKEND_URL}/recipes/suggest`, { prompt });
+      const aiRecipes = response.data.recipes || response.data;
 
       if (Array.isArray(aiRecipes)) setRecipes(aiRecipes);
-      else setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes?.toString() || "" }]);
+      else setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes.toString() }]);
     } catch (err) {
       console.error("Failed to fetch AI recipes:", err.response?.data || err.message);
       setRecipes([{ title: "Error", ingredients: [], instructions: "Failed to fetch recipes." }]);
@@ -95,11 +101,8 @@ export default function Pantry() {
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
-      if (!acc[name]) {
-        acc[name] = { id: curr.id, name: curr.item, quantity: Number(curr.quantity) || 0 };
-      } else {
-        acc[name].quantity += Number(curr.quantity) || 0;
-      }
+      if (!acc[name]) acc[name] = { id: curr.id, name: curr.item, quantity: Number(curr.quantity) || 0 };
+      else acc[name].quantity += Number(curr.quantity) || 0;
       return acc;
     }, {})
   ).sort((a, b) => a.name.localeCompare(b.name));
@@ -119,18 +122,8 @@ export default function Pantry() {
       </ul>
 
       <form onSubmit={addItem} style={{ marginTop: "20px" }}>
-        <input
-          type="text"
-          placeholder="Item name"
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+        <input type="text" placeholder="Item name" value={item} onChange={(e) => setItem(e.target.value)} />
+        <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <button type="submit">Add Item</button>
       </form>
 

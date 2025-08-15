@@ -103,12 +103,12 @@ export default function Pantry() {
       const aiText = response.data.recipes || "No recipes generated.";
 
       // Split recipes by numbering (1., 2., etc.) if possible
-      const splitRecipes = aiText.split(/\n\s*\d\.\s+/).filter(Boolean);
-
-      const formatted = splitRecipes.map((r, idx) => ({
-        title: `Recipe ${idx + 1}`,
-        instructions: r.trim(),
-      }));
+    // Split recipes by the "### Recipe:" marker
+    const splitRecipes = aiText.split("### Recipe:").filter(Boolean).map(r => r.trim());
+    const formatted = splitRecipes.map((r, idx) => ({
+      title: `Recipe ${idx + 1}`,
+      instructions: r.trim()
+    }));
 
       setRecipes(formatted);
     } catch (err) {

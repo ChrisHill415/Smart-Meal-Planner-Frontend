@@ -1,67 +1,53 @@
-import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-import Home from "./home";
-import Pantry from "./pantry";
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import React, { useState } from "react";
+import Home from "./Home";
+import { supabase } from "./supabase";
 
 export default function App() {
-  const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
 
-  useEffect(() => {
-    // Get current session
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-    });
-
-    // Listen to auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => listener?.subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setShowLogin(false);
+  const handleGetStarted = () => {
+    setShowLogin(true);
   };
 
-  // If logged in
-  if (user) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <h1>Welcome, {user.email}</h1>
-        <Pantry />
-        <button onClick={handleLogout} style={{ marginTop: "20px", padding: "10px 20px" }}>
-          Logout
-        </button>
-      </div>
-    );
-  }
+  const handleLoginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+    if (error) console.error("Login error:", error.message);
+  };
 
-  // If showing login (could also use Supabase OTP / OAuth)
-  if (showLogin) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <h1>Login / Signup</h1>
-        <button
-          style={{ padding: "10px 20px", marginTop: "20px" }}
-          onClick={() => supabase.auth.signInWithOAuth({ provider: "google" })}
+  return (
+    <div style={{ height: "100vh", margin: 0 }}>
+      {showLogin ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            backgroundColor: "#f0f0f0",
+          }}
         >
-          Continue with Google
-        </button>
-        <br />
-        <button style={{ marginTop: "20px" }} onClick={() => setShowLogin(false)}>
-          Back
-        </button>
-      </div>
-    );
-  }
-
-  // Default Home page
-  return <Home onGetStarted={() => setShowLogin(true)} />;
+          <h1 style={{ marginBottom: "20px" }}>Login</h1>
+          <button
+            onClick={handleLoginWithGoogle}
+            style={{
+              padding: "10px 20px",
+              fontSize: "1rem",
+              borderRadius: "5px",
+              border: "none",
+              backgroundColor: "#4285F4",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Login with Google
+          </button>
+        </div>
+      ) : (
+        <Home onGetStarted={handleGetStarted} />
+      )}
+    </div>
+  );
 }

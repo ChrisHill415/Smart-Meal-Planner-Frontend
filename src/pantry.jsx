@@ -10,16 +10,17 @@ export default function Pantry() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch pantry items on load
   useEffect(() => {
-    fetchItems();
+    fetchPantryItems();
   }, []);
 
-  async function fetchItems() {
+  async function fetchPantryItems() {
     try {
-      const res = await axios.get("/pantry/list");
-      setItems(res.data || []);
+      const response = await axios.get("/pantry/list");
+      setItems(response.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch pantry items:", err.response?.data || err.message);
       setError("Failed to fetch pantry items.");
     }
   }
@@ -27,20 +28,20 @@ export default function Pantry() {
   async function addItem(e) {
     e.preventDefault();
     setError(null);
-    if (!item || !quantity) return setError("Enter both name and quantity.");
+
+    if (!item || !quantity) {
+      return setError("Enter both name and quantity.");
+    }
 
     try {
-      await axios.post("/pantry/add", {
-        item,
-        quantity: Number(quantity),
-        unit: "",
-      });
+      const body = { item, quantity: Number(quantity), unit: "" };
+      await axios.post("/pantry/add", body);
       setItem("");
       setQuantity("");
-      fetchItems();
+      fetchPantryItems();
     } catch (err) {
-      console.error(err);
-      setError("Failed to add item.");
+      console.error("Failed to add item:", err.response?.data || err.message);
+      setError("Failed to add item. Check console for details.");
     }
   }
 
@@ -48,10 +49,10 @@ export default function Pantry() {
     setError(null);
     try {
       await axios.delete(`/pantry/remove/${itemId}`);
-      fetchItems();
+      fetchPantryItems();
     } catch (err) {
-      console.error(err);
-      setError("Failed to remove item.");
+      console.error("Failed to remove item:", err.response?.data || err.message);
+      setError("Failed to remove item. Check console for details.");
     }
   }
 
@@ -65,37 +66,68 @@ export default function Pantry() {
     setError(null);
 
     try {
-      const res = await axios.get("/recipes/suggest");
-      const aiRecipes = res.data;
-
-      if (Array.isArray(aiRecipes)) setRecipes(aiRecipes);
-      else setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes.toString() }]);
+      const response = await axios.get("/recipes/suggest");
+      const aiRecipes = response.data;
+      if (Array.isArray(aiRecipes)) {
+        setRecipes(aiRecipes);
+      } else {
+        setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes?.toString() || "" }]);
+      }
     } catch (err) {
-      console.error("Failed to fetch AI recipes:", err);
+      console.error("Failed to fetch recipes:", err.response?.data || err.message);
       setRecipes([{ title: "Error", ingredients: [], instructions: "Failed to fetch recipes." }]);
-      setError("Failed to fetch AI recipes.");
+      setError("Failed to fetch recipes.");
     } finally {
       setLoading(false);
     }
   }
 
+  // Group and sort pantry items
+  const groupedItems = Object.values(
+    items.reduce((acc, curr) => {
+      const name = curr.item.trim().toLowerCase();
+      if (!acc[name]) {
+        acc[name] = { id: curr.id, name: curr.item, quantity: Number(curr.quantity) || 0 };
+      } else {
+        acc[name].quantity += Number(curr.quantity) || 0;
+      }
+      return acc;
+    }, {})
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
+    <div>
       <h2>Pantry Items</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <ul>
-        {items.map((item) => (
+        {groupedItems.map((item) => (
           <li key={item.id}>
-            {item.item} — {item.quantity} {item.unit}
-            <button style={{ marginLeft: "10px" }} onClick={() => removeItem(item.id)}>Remove</button>
+            {item.name} — {item.quantity}{" "}
+            <button
+              onClick={() => removeItem(item.id)}
+              style={{ marginLeft: "10px" }}
+            >
+              Remove
+            </button>
           </li>
         ))}
       </ul>
 
       <form onSubmit={addItem} style={{ marginTop: "20px" }}>
-        <input type="text" placeholder="Item name" value={item} onChange={(e) => setItem(e.target.value)} />
-        <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        <input
+          type="text"
+          placeholder="Item name"
+          value={item}
+          onChange={(e) => setItem(e.target.value)}
+        />
+        <input
+          type="number"
+          placeholder="Quantity"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          min={1}
+        />
         <button type="submit">Add Item</button>
       </form>
 

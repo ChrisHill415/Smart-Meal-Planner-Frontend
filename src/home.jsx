@@ -11,18 +11,22 @@ export default function Home() {
   };
 
   return (
+    
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "100vh",
+        minHeight: "100%",  // use 100% so it fills parent
+        width: "100%",
         textAlign: "center",
         padding: "20px",
         fontFamily: "Arial, sans-serif",
         backgroundColor: "#f8f8f8",
       }}
+    >
+
     >
       {/* Top Title */}
       <h1 style={{ fontSize: "3rem", marginBottom: "50px", color: "#333" }}>

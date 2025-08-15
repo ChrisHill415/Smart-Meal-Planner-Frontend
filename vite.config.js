@@ -1,8 +1,17 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // <-- this fixes asset path resolution on Netlify
-})
+  server: {
+    proxy: {
+      // Any request to /api will be forwarded to your backend
+      "/api": {
+        target: "https://smart-meal-planner-backend.onrender.com", // Replace with your deployed backend URL
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
+});
+

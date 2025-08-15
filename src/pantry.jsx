@@ -103,7 +103,12 @@ export default function Pantry() {
 
     try {
       // Send prompt to backend API (which will call AI)
-      const response = await axios.post('/api/recipes', { prompt });
+      
+      const response = await axios.post(
+  "https://smart-meal-planner-backend.onrender.com/api/recipes",
+  { prompt }
+);
+
       const aiRecipes = response.data.recipes;
 
       if (Array.isArray(aiRecipes)) {

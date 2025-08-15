@@ -1,40 +1,35 @@
 import React from "react";
 
 export default function Recipes({ recipes }) {
-  if (!recipes || recipes.length === 0) {
-    <p>Hope you enjoy!</p>
+  if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+    return <p>No recipes to display.</p>;
   }
 
   return (
-    <div style={{ marginTop: "20px" }}>
-      <h3>Suggested Recipes:</h3>
+    <div
+      style={{
+        display: "flex",
+        gap: "20px",
+        flexWrap: "wrap",
+        marginTop: "20px",
+      }}
+    >
       {recipes.map((r, idx) => (
         <div
           key={idx}
           style={{
-            marginBottom: "20px",
+            backgroundColor: "#333",
+            color: "#fff",
+            border: "1px solid #555",
             padding: "15px",
-            border: "1px solid #ccc",
             borderRadius: "8px",
-            backgroundColor: "#f9f9f9",
+            whiteSpace: "pre-wrap",
+            flex: "1 1 300px",
+            minWidth: "250px",
           }}
         >
-          <h4 style={{ marginBottom: "10px" }}>{r.title || "Untitled Recipe"}</h4>
-
-          {r.ingredients && r.ingredients.length > 0 ? (
-            <ul style={{ marginBottom: "10px" }}>
-              {r.ingredients.map((ing, i) => (
-                <li key={i}>{ing}</li>
-              ))}
-            </ul>
-          ) : (
-            <p><strong>Ingredients:</strong> Not provided</p>
-          )}
-
-          <p>
-            <strong>Instructions:</strong>{" "}
-            {r.instructions || "No instructions provided."}
-          </p>
+          <h3>{r.title}</h3>
+          <p>{r.instructions}</p>
         </div>
       ))}
     </div>

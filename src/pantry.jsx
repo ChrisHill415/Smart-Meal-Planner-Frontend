@@ -6,11 +6,12 @@ export default function Pantry() {
   const [items, setItems] = useState([]);
   const [item, setItem] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState("");
+  const [unit, setUnit] = useState(""); 
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch pantry items on mount
   useEffect(() => {
     fetchItems();
   }, []);
@@ -28,7 +29,9 @@ export default function Pantry() {
     e.preventDefault();
     setError(null);
 
-    if (!item || !quantity) return setError("Enter item and quantity.");
+    if (!item || !quantity) {
+      return setError("Enter item and quantity.");
+    }
 
     const payload = {
       item: item.trim(),
@@ -80,7 +83,12 @@ export default function Pantry() {
 
   async function handleGetRecipes() {
     if (items.length === 0) {
-      setRecipes([{ instructions: "Add pantry items first." }]);
+      setRecipes([
+        {
+          title: "Add pantry items first",
+          instructions: "",
+        },
+      ]);
       return;
     }
 
@@ -92,22 +100,29 @@ export default function Pantry() {
         "https://smart-meal-planner-backend.onrender.com/api/recipes"
       );
 
-      const aiResponse = response.data.recipes; // backend returns a string
+      const aiText = response.data.recipes || "No recipes generated.";
 
-      if (!aiResponse || aiResponse.trim() === "") {
-        setRecipes([{ instructions: "No recipes generated." }]);
-      } else {
-        setRecipes([{ instructions: aiResponse }]); // wrap in array for mapping
-      }
+      // Split recipes by numbering (1., 2., etc.) if possible
+      const splitRecipes = aiText.split(/\n\s*\d\.\s+/).filter(Boolean);
+
+      const formatted = splitRecipes.map((r, idx) => ({
+        title: `Recipe ${idx + 1}`,
+        instructions: r.trim(),
+      }));
+
+      setRecipes(formatted);
     } catch (err) {
       console.error("Failed to fetch AI recipes:", err);
-      setRecipes([{ instructions: "Failed to fetch recipes." }]);
+      setRecipes([
+        { title: "Error", instructions: "Failed to fetch recipes." },
+      ]);
       setError("Failed to fetch AI recipes.");
     } finally {
       setLoading(false);
     }
   }
 
+  // Group pantry items by name
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
@@ -124,7 +139,7 @@ export default function Pantry() {
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "auto" }}>
+    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
       <h2>Pantry Items</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -140,11 +155,13 @@ export default function Pantry() {
               }}
             >
               <option value={0}>Remove...</option>
-              {Array.from({ length: item.quantity }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
-              ))}
+              {Array.from({ length: item.quantity }, (_, i) => i + 1).map(
+                (num) => (
+                  <option key={num} value={num}>
+                    {num}
+                  </option>
+                )
+              )}
             </select>
           </li>
         ))}
@@ -156,18 +173,21 @@ export default function Pantry() {
           placeholder="Item name"
           value={item}
           onChange={(e) => setItem(e.target.value)}
+          style={{ marginRight: "10px" }}
         />
         <input
           type="text"
           placeholder="Quantity"
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
+          style={{ marginRight: "10px" }}
         />
         <input
           type="text"
           placeholder="Unit (optional)"
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
+          style={{ marginRight: "10px" }}
         />
         <button type="submit">Add Item</button>
       </form>
@@ -178,28 +198,33 @@ export default function Pantry() {
         </button>
       </div>
 
-      {/* Render AI Recipes */}
-      {loading && <p>Loading recipes...</p>}
-      {!loading && recipes.length > 0 && (
-        <div style={{ marginTop: "20px" }}>
-          {recipes.map((r, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: "#f9f9f9",
-                color: "#000",
-                border: "1px solid #ccc",
-                padding: "15px",
-                marginBottom: "10px",
-                borderRadius: "8px",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {r.instructions}
-            </div>
-          ))}
-        </div>
-      )}
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          flexWrap: "wrap",
+          marginTop: "20px",
+        }}
+      >
+        {recipes.map((r, idx) => (
+          <div
+            key={idx}
+            style={{
+              backgroundColor: "#333",
+              color: "#fff",
+              border: "1px solid #555",
+              padding: "15px",
+              borderRadius: "8px",
+              whiteSpace: "pre-wrap",
+              flex: "1 1 300px",
+              minWidth: "250px",
+            }}
+          >
+            <h3>{r.title}</h3>
+            <p>{r.instructions}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

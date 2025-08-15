@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Recipes({ recipes }) {
   if (!recipes || recipes.length === 0) {
-    return <p>No recipes to display.</p>;
+    
   }
 
   return (

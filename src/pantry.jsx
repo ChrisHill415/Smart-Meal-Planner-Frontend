@@ -92,7 +92,7 @@ export default function Pantry() {
 
     try {
       const response = await axios.get(
-        "https://smart-meal-planner-backend.onrender.com/recipes/suggest"
+        "https://smart-meal-planner-backend.onrender.com/api/recipes"
       );
       const aiRecipes = response.data;
 

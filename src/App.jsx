@@ -31,16 +31,18 @@ export default function App() {
 
   // Show main app if logged in
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Welcome, {user.email}</h1>
-      <Pantry />
-      <Recipes />
-      <button
-        onClick={() => supabase.auth.signOut()}
-        style={{ marginTop: "20px" }}
-      >
-        Logout
-      </button>
+      return (
+    <div style={{ height: "100%" }}>  {/* <- important */}
+      {!user ? <Home /> : (
+        <div style={{ padding: "20px" }}>
+          <h1>Welcome, {user.email}</h1>
+          <Pantry />
+          <Recipes />
+          <button onClick={() => supabase.auth.signOut()}>Logout</button>
+        </div>
+      )}
     </div>
+  );
+}
   )
 }

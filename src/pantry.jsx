@@ -7,7 +7,7 @@ export default function Pantry() {
   const [items, setItems] = useState([]);
   const [item, setItem] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState(""); // optional
+  const [unit, setUnit] = useState("");
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,14 +29,12 @@ export default function Pantry() {
     e.preventDefault();
     setError(null);
 
-    if (!item || !quantity) {
-      return setError("Enter item and quantity.");
-    }
+    if (!item || !quantity) return setError("Enter item and quantity.");
 
     const payload = {
       item: item.trim(),
       quantity: Number(quantity),
-      unit: unit.trim() || "", // keep empty string if not provided
+      unit: unit.trim() || "",
     };
 
     try {
@@ -94,10 +92,21 @@ export default function Pantry() {
       const response = await axios.get(
         "https://smart-meal-planner-backend.onrender.com/api/recipes"
       );
-      const aiRecipes = response.data;
 
-      if (Array.isArray(aiRecipes)) setRecipes(aiRecipes);
-      else setRecipes([{ title: "AI Response", ingredients: [], instructions: aiRecipes.toString() }]);
+      const aiResponse = response.data.recipes; // backend now returns { recipes: "text..." }
+
+      if (!aiResponse || aiResponse.trim() === "") {
+        setRecipes([{ title: "AI Response", ingredients: [], instructions: "No recipes generated." }]);
+      } else {
+        // Split into separate recipes if possible
+        const splitRecipes = aiResponse.split(/\n\d+\./).filter((r) => r.trim() !== "");
+        const formatted = splitRecipes.map((text, i) => ({
+          title: `Recipe ${i + 1}`,
+          ingredients: [], // optional: parse if your AI returns structured ingredients
+          instructions: text.trim(),
+        }));
+        setRecipes(formatted);
+      }
     } catch (err) {
       console.error("Failed to fetch AI recipes:", err);
       setRecipes([{ title: "Error", ingredients: [], instructions: "Failed to fetch recipes." }]);
@@ -110,7 +119,13 @@ export default function Pantry() {
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
-      if (!acc[name]) acc[name] = { id: curr.id, name: curr.item, quantity: Number(curr.quantity) || 0, unit: curr.unit || "" };
+      if (!acc[name])
+        acc[name] = {
+          id: curr.id,
+          name: curr.item,
+          quantity: Number(curr.quantity) || 0,
+          unit: curr.unit || "",
+        };
       else acc[name].quantity += Number(curr.quantity) || 0;
       return acc;
     }, {})
@@ -171,7 +186,9 @@ export default function Pantry() {
         </button>
       </div>
 
-      <Recipes recipes={recipes} />
+      {/* Render Recipes */}
+      {loading && <p>Loading recipes...</p>}
+      {!loading && recipes.length > 0 && <Recipes recipes={recipes} />}
     </div>
   );
 }

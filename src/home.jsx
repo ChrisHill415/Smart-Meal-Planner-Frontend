@@ -1,6 +1,15 @@
 import React from "react";
+import { supabase } from "./supabase";
 
 export default function Home() {
+  const handleLogin = async () => {
+    // Redirect to Supabase login/signup flow
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google" // or email/password
+    });
+    if (error) console.error("Login error:", error.message);
+  };
+
   return (
     <div
       style={{
@@ -37,6 +46,21 @@ export default function Home() {
           reduce food waste, save time, and inspire delicious meals for every
           day.
         </p>
+        <button
+          onClick={handleLogin}
+          style={{
+            marginTop: "20px",
+            padding: "10px 20px",
+            fontSize: "1rem",
+            borderRadius: "5px",
+            border: "none",
+            backgroundColor: "#4CAF50",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Get Started
+        </button>
       </div>
     </div>
   );

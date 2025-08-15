@@ -5,28 +5,25 @@ export default function Home() {
   const handleLogin = async () => {
     // Redirect to Supabase login/signup flow
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google" // or email/password
+      provider: "google", // or email/password
     });
     if (error) console.error("Login error:", error.message);
   };
 
   return (
-    
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "100%",  // use 100% so it fills parent
+        height: "100vh", // fill the full viewport
         width: "100%",
         textAlign: "center",
         padding: "20px",
         fontFamily: "Arial, sans-serif",
         backgroundColor: "#f8f8f8",
       }}
-    >
-
     >
       {/* Top Title */}
       <h1 style={{ fontSize: "3rem", marginBottom: "50px", color: "#333" }}>

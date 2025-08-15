@@ -1,11 +1,10 @@
 import React from "react";
 import { supabase } from "./supabase";
 
-export default function Home() {
+export default function Home({ onGetStarted }) { // <-- accept the prop
   const handleLogin = async () => {
-    // Redirect to Supabase login/signup flow
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google", // or email/password
+      provider: "google",
     });
     if (error) console.error("Login error:", error.message);
   };
@@ -17,7 +16,7 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        height: "100vh", // fill the full viewport
+        height: "100vh",
         width: "100%",
         textAlign: "center",
         padding: "20px",
@@ -25,12 +24,10 @@ export default function Home() {
         backgroundColor: "#f8f8f8",
       }}
     >
-      {/* Top Title */}
       <h1 style={{ fontSize: "3rem", marginBottom: "50px", color: "#333" }}>
         Smart Meal Planner
       </h1>
 
-      {/* Mission Section */}
       <div
         style={{
           maxWidth: "600px",
@@ -48,7 +45,7 @@ export default function Home() {
           day.
         </p>
         <button
-          onClick={handleLogin} // ✅ Fixed
+          onClick={onGetStarted} // now works because prop exists
           style={{
             marginTop: "20px",
             padding: "10px 20px",

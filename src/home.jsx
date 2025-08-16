@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { supabase } from "./supabase";
+import { useNavigate } from "react-router-dom"; // for redirect
 
 export default function Home({ onGetStarted }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   // Signup
   const handleSignup = async () => {
@@ -16,8 +18,12 @@ export default function Home({ onGetStarted }) {
   // Login
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setMessage(error.message);
-    else setMessage("Logged in successfully!");
+    if (error) {
+      setMessage(error.message);
+    } else {
+      // ✅ go to pantry after login
+      navigate("/pantry");
+    }
   };
 
   return (
@@ -50,6 +56,7 @@ export default function Home({ onGetStarted }) {
           onChange={(e) => setEmail(e.target.value)}
           style={{
             padding: "8px",
+            width: "200px",           // 🔹 fixed width
             borderRadius: "5px",
             border: "1px solid #ccc",
           }}
@@ -61,6 +68,7 @@ export default function Home({ onGetStarted }) {
           onChange={(e) => setPassword(e.target.value)}
           style={{
             padding: "8px",
+            width: "200px",           // 🔹 same fixed width
             borderRadius: "5px",
             border: "1px solid #ccc",
           }}

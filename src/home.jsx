@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { useNavigate } from "react-router-dom";
 
@@ -8,28 +8,32 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // Handle signup
+  useEffect(() => {
+    // Make body & html fill the viewport and remove default margin
+    document.body.style.margin = "0";
+    document.body.style.height = "100%";
+    document.documentElement.style.height = "100%";
+  }, []);
+
   const handleSignup = async () => {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) setMessage(error.message);
     else setMessage("Check your email to confirm signup!");
   };
 
-  // Handle login
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setMessage(error.message);
-    } else {
+    if (error) setMessage(error.message);
+    else {
       setMessage("");
-      navigate("/pantry"); // ✅ Redirect to Pantry.jsx
+      navigate("/pantry");
     }
   };
 
   return (
     <div
       style={{
-        height: "100vh",
+        minHeight: "100vh",
         width: "100%",
         display: "flex",
         flexDirection: "column",
@@ -54,12 +58,14 @@ export default function Home() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={{
+            width: "200px",
             padding: "10px",
             fontSize: "1rem",
             border: "1px solid #ccc",
             borderRadius: "5px",
             marginRight: "10px",
-            width: "200px", // ✅ fixed width
+            boxSizing: "border-box", // ✅ ensures height includes padding
+            height: "40px",          // ✅ fixed height
           }}
         />
         <input
@@ -68,12 +74,14 @@ export default function Home() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={{
+            width: "200px",
             padding: "10px",
             fontSize: "1rem",
             border: "1px solid #ccc",
             borderRadius: "5px",
             marginRight: "10px",
-            width: "200px", // ✅ same width as email
+            boxSizing: "border-box", // ✅ ensures height matches email input
+            height: "40px",          // ✅ fixed height
           }}
         />
         <button
@@ -86,6 +94,7 @@ export default function Home() {
             border: "none",
             borderRadius: "5px",
             cursor: "pointer",
+            height: "40px",           // ✅ match input height visually
           }}
         >
           Log In
@@ -99,6 +108,7 @@ export default function Home() {
             border: "none",
             borderRadius: "5px",
             cursor: "pointer",
+            height: "40px",           // ✅ match input height visually
           }}
         >
           Sign Up

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Pantry() {
   const [items, setItems] = useState([]);
@@ -10,6 +11,14 @@ export default function Pantry() {
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+
+  // 🔹 Logout function
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/"); // back to Home
+  };
 
   // Fetch pantry items on mount
   useEffect(() => {
@@ -83,12 +92,7 @@ export default function Pantry() {
 
   async function handleGetRecipes() {
     if (items.length === 0) {
-      setRecipes([
-        {
-          title: "Add pantry items first",
-          instructions: "",
-        },
-      ]);
+      setRecipes([{ title: "Add pantry items first", instructions: "" }]);
       return;
     }
 
@@ -102,45 +106,61 @@ export default function Pantry() {
 
       const aiText = response.data.recipes || "No recipes generated.";
 
-      // Split recipes by numbering (1., 2., etc.) if possible
-    // Split recipes by the "### Recipe:" marker
-    const splitRecipes = aiText.split("### Recipe:").filter(Boolean).map(r => r.trim());
-    const formatted = splitRecipes.map((r, idx) => ({
-      title: `Recipe ${idx + 1}`,
-      instructions: r.trim()
-    }));
+      const splitRecipes = aiText
+        .split("### Recipe:")
+        .filter(Boolean)
+        .map((r) => r.trim());
+
+      const formatted = splitRecipes.map((r, idx) => ({
+        title: `Recipe ${idx + 1}`,
+        instructions: r.trim(),
+      }));
 
       setRecipes(formatted);
     } catch (err) {
       console.error("Failed to fetch AI recipes:", err);
-      setRecipes([
-        { title: "Error", instructions: "Failed to fetch recipes." },
-      ]);
+      setRecipes([{ title: "Error", instructions: "Failed to fetch recipes." }]);
       setError("Failed to fetch AI recipes.");
     } finally {
       setLoading(false);
     }
   }
 
-  // Group pantry items by name
   const groupedItems = Object.values(
     items.reduce((acc, curr) => {
       const name = curr.item.trim().toLowerCase();
-      if (!acc[name])
+      if (!acc[name]) {
         acc[name] = {
           id: curr.id,
           name: curr.item,
           quantity: Number(curr.quantity) || 0,
           unit: curr.unit || "",
         };
-      else acc[name].quantity += Number(curr.quantity) || 0;
+      } else acc[name].quantity += Number(curr.quantity) || 0;
       return acc;
     }, {})
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h2>Pantry Items</h2>
+      {/* 🔹 Top bar with Logout */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+        <h2>Pantry Items</h2>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: "8px 15px",
+            borderRadius: "5px",
+            border: "none",
+            backgroundColor: "#e53935",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <ul>
@@ -155,13 +175,11 @@ export default function Pantry() {
               }}
             >
               <option value={0}>Remove...</option>
-              {Array.from({ length: item.quantity }, (_, i) => i + 1).map(
-                (num) => (
-                  <option key={num} value={num}>
-                    {num}
-                  </option>
-                )
-              )}
+              {Array.from({ length: item.quantity }, (_, i) => i + 1).map((num) => (
+                <option key={num} value={num}>
+                  {num}
+                </option>
+              ))}
             </select>
           </li>
         ))}

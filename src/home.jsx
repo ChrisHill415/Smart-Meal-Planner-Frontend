@@ -9,10 +9,13 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Make body & html fill the viewport and remove default margin
+    // Ensure full viewport height and remove default margins
     document.body.style.margin = "0";
+    document.body.style.padding = "0";
     document.body.style.height = "100%";
     document.documentElement.style.height = "100%";
+    document.documentElement.style.margin = "0";
+    document.documentElement.style.padding = "0";
   }, []);
 
   const handleSignup = async () => {
@@ -50,6 +53,8 @@ export default function Home() {
           padding: "15px 30px",
           backgroundColor: "#fff",
           boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          width: "100%", // ensure full width
+          boxSizing: "border-box",
         }}
       >
         <input
@@ -64,8 +69,8 @@ export default function Home() {
             border: "1px solid #ccc",
             borderRadius: "5px",
             marginRight: "10px",
-            boxSizing: "border-box", // ✅ ensures height includes padding
-            height: "40px",          // ✅ fixed height
+            boxSizing: "border-box",
+            height: "40px",
           }}
         />
         <input
@@ -80,8 +85,8 @@ export default function Home() {
             border: "1px solid #ccc",
             borderRadius: "5px",
             marginRight: "10px",
-            boxSizing: "border-box", // ✅ ensures height matches email input
-            height: "40px",          // ✅ fixed height
+            boxSizing: "border-box",
+            height: "40px",
           }}
         />
         <button
@@ -94,7 +99,7 @@ export default function Home() {
             border: "none",
             borderRadius: "5px",
             cursor: "pointer",
-            height: "40px",           // ✅ match input height visually
+            height: "40px",
           }}
         >
           Log In
@@ -108,14 +113,14 @@ export default function Home() {
             border: "none",
             borderRadius: "5px",
             cursor: "pointer",
-            height: "40px",           // ✅ match input height visually
+            height: "40px",
           }}
         >
           Sign Up
         </button>
       </div>
 
-      {/* Intro content in center */}
+      {/* Intro content stretches full width */}
       <div
         style={{
           flex: 1,
@@ -124,13 +129,21 @@ export default function Home() {
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
+          width: "100%", // stretch full width
           padding: "20px",
+          boxSizing: "border-box",
         }}
       >
         <h1 style={{ fontSize: "3rem", marginBottom: "30px", color: "#333" }}>
           Smart Meal Planner
         </h1>
-        <p style={{ maxWidth: "600px", fontSize: "1.2rem", color: "#555" }}>
+        <p
+          style={{
+            maxWidth: "800px", // text width for readability
+            fontSize: "1.2rem",
+            color: "#555",
+          }}
+        >
           At Smart Meal Planner, our goal is to help you make the most of your
           pantry ingredients by providing easy, creative recipes. We aim to
           reduce food waste, save time, and inspire delicious meals for every

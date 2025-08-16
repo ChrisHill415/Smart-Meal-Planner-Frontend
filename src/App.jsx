@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import Home from "./Home";
-import Pantry from "./Pantry";
+import Home from "./home";
+import Pantry from "./pantry";
 import { supabase } from "./supabase";
 
 // 🔹 Login Component inside App for clarity

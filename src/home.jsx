@@ -1,7 +1,7 @@
 import React from "react";
 import { supabase } from "./supabase";
 
-export default function Home({ onGetStarted }) { // <-- accept the prop
+export default function Home({ onGetStarted }) {
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -14,52 +14,43 @@ export default function Home({ onGetStarted }) { // <-- accept the prop
       style={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         justifyContent: "center",
-        height: "100vh",
-        width: "100%",
+        alignItems: "center",
+        height: "100vh", // full height
+        width: "100vw",  // full width
         textAlign: "center",
-        padding: "20px",
+        padding: "40px",
         fontFamily: "Arial, sans-serif",
-        backgroundColor: "#f8f8f8",
+        backgroundColor: "#fff", // white background everywhere
       }}
     >
-      <h1 style={{ fontSize: "3rem", marginBottom: "50px", color: "#333" }}>
+      <h1 style={{ fontSize: "3rem", marginBottom: "20px", color: "#333" }}>
         Smart Meal Planner
       </h1>
 
-      <div
+      <h2 style={{ marginBottom: "20px", color: "#555" }}>Our Mission</h2>
+      <p style={{ fontSize: "1.2rem", lineHeight: "1.8", color: "#666", maxWidth: "800px" }}>
+        At Smart Meal Planner, our goal is to help you make the most of your
+        pantry ingredients by providing easy, creative recipes. We aim to
+        reduce food waste, save time, and inspire delicious meals for every
+        day.
+      </p>
+
+      <button
+        onClick={onGetStarted}
         style={{
-          maxWidth: "600px",
-          backgroundColor: "#fff",
-          padding: "30px",
-          borderRadius: "10px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+          marginTop: "30px",
+          padding: "12px 24px",
+          fontSize: "1.1rem",
+          borderRadius: "5px",
+          border: "none",
+          backgroundColor: "#4CAF50",
+          color: "#fff",
+          cursor: "pointer",
         }}
       >
-        <h2 style={{ marginBottom: "20px", color: "#555" }}>Our Mission</h2>
-        <p style={{ fontSize: "1.1rem", lineHeight: "1.6", color: "#666" }}>
-          At Smart Meal Planner, our goal is to help you make the most of your
-          pantry ingredients by providing easy, creative recipes. We aim to
-          reduce food waste, save time, and inspire delicious meals for every
-          day.
-        </p>
-        <button
-          onClick={onGetStarted} // now works because prop exists
-          style={{
-            marginTop: "20px",
-            padding: "10px 20px",
-            fontSize: "1rem",
-            borderRadius: "5px",
-            border: "none",
-            backgroundColor: "#4CAF50",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          Get Started
-        </button>
-      </div>
+        Get Started
+      </button>
     </div>
   );
 }

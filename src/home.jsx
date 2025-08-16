@@ -9,13 +9,17 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Ensure full viewport height and remove default margins
+    // Reset CSS for full screen and consistent sizing
     document.body.style.margin = "0";
     document.body.style.padding = "0";
     document.body.style.height = "100%";
-    document.documentElement.style.height = "100%";
+    document.body.style.width = "100%";
+    document.body.style.backgroundColor = "#f8f8f8"; // Full-screen background
     document.documentElement.style.margin = "0";
     document.documentElement.style.padding = "0";
+    document.documentElement.style.height = "100%";
+    document.documentElement.style.width = "100%";
+    document.documentElement.style.backgroundColor = "#f8f8f8"; // Full-screen background
   }, []);
 
   const handleSignup = async () => {
@@ -27,10 +31,29 @@ export default function Home() {
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setMessage(error.message);
-    else {
-      setMessage("");
-      navigate("/pantry");
-    }
+    else navigate("/pantry");
+  };
+
+  const inputStyle = {
+    width: "200px",
+    padding: "10px",
+    fontSize: "1rem",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    marginRight: "10px",
+    boxSizing: "border-box",
+    height: "40px",
+    lineHeight: "normal",
+  };
+
+  const buttonStyle = {
+    padding: "10px 15px",
+    marginRight: "10px",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    height: "40px",
+    lineHeight: "normal",
   };
 
   return (
@@ -40,8 +63,8 @@ export default function Home() {
         width: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#f8f8f8",
         fontFamily: "Arial, sans-serif",
+        backgroundColor: "#f8f8f8", // Container background
       }}
     >
       {/* Top bar */}
@@ -53,74 +76,21 @@ export default function Home() {
           padding: "15px 30px",
           backgroundColor: "#fff",
           boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-          width: "100%", // ensure full width
+          width: "100%",
           boxSizing: "border-box",
         }}
       >
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            width: "200px",
-            padding: "10px",
-            fontSize: "1rem",
-            border: "1px solid #ccc",
-            borderRadius: "5px",
-            marginRight: "10px",
-            boxSizing: "border-box",
-            height: "40px",
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "200px",
-            padding: "10px",
-            fontSize: "1rem",
-            border: "1px solid #ccc",
-            borderRadius: "5px",
-            marginRight: "10px",
-            boxSizing: "border-box",
-            height: "40px",
-          }}
-        />
-        <button
-          onClick={handleLogin}
-          style={{
-            padding: "10px 15px",
-            marginRight: "10px",
-            backgroundColor: "#4CAF50",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-            height: "40px",
-          }}
-        >
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} />
+        <button onClick={handleLogin} style={{ ...buttonStyle, backgroundColor: "#4CAF50", color: "#fff" }}>
           Log In
         </button>
-        <button
-          onClick={handleSignup}
-          style={{
-            padding: "10px 15px",
-            backgroundColor: "#2196F3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-            height: "40px",
-          }}
-        >
+        <button onClick={handleSignup} style={{ ...buttonStyle, backgroundColor: "#2196F3", color: "#fff" }}>
           Sign Up
         </button>
       </div>
 
-      {/* Intro content stretches full width */}
+      {/* Intro content */}
       <div
         style={{
           flex: 1,
@@ -129,7 +99,7 @@ export default function Home() {
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          width: "100%", // stretch full width
+          width: "100%",
           padding: "20px",
           boxSizing: "border-box",
         }}
@@ -137,13 +107,7 @@ export default function Home() {
         <h1 style={{ fontSize: "3rem", marginBottom: "30px", color: "#333" }}>
           Smart Meal Planner
         </h1>
-        <p
-          style={{
-            maxWidth: "800px", // text width for readability
-            fontSize: "1.2rem",
-            color: "#555",
-          }}
-        >
+        <p style={{ maxWidth: "800px", fontSize: "1.2rem", color: "#555" }}>
           At Smart Meal Planner, our goal is to help you make the most of your
           pantry ingredients by providing easy, creative recipes. We aim to
           reduce food waste, save time, and inspire delicious meals for every

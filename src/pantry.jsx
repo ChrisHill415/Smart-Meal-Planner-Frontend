@@ -6,7 +6,7 @@ export default function Pantry() {
   const [items, setItems] = useState([]);
   const [item, setItem] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState(""); 
+  const [unit, setUnit] = useState("");
   const [error, setError] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -97,7 +97,6 @@ export default function Pantry() {
     }
   }
 
-  // 🔹 Recipes function unchanged
   async function handleGetRecipes() {
     if (items.length === 0) {
       setRecipes([{ title: "Add pantry items first", instructions: "" }]);
@@ -108,7 +107,6 @@ export default function Pantry() {
     setError(null);
 
     try {
-      // Example API call (replace with your backend if needed)
       const response = await fetch("/api/recipes");
       const aiText = await response.text();
 
@@ -139,9 +137,25 @@ export default function Pantry() {
   }));
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+    <div
+      style={{
+        width: "100vw",          // 🔹 Full width
+        minHeight: "100vh",      // 🔹 Full height
+        boxSizing: "border-box",
+        padding: "20px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       {/* 🔹 Top bar with Logout */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+          width: "100%",
+        }}
+      >
         <h2>Pantry Items</h2>
         <button
           onClick={handleLogout}
@@ -160,15 +174,15 @@ export default function Pantry() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <ul>
+      <ul style={{ width: "100%", padding: 0 }}>
         {groupedItems.map((item) => (
-          <li key={item.id}>
+          <li key={item.id} style={{ marginBottom: "10px" }}>
             {item.name} — {item.quantity} {item.unit}{" "}
             <select
               onChange={(e) => {
                 const qty = Number(e.target.value);
                 if (qty === 0) return;
-                removeItem(item.id, qty); // 🔹 Use item.id
+                removeItem(item.id, qty);
               }}
             >
               <option value={0}>Remove...</option>
@@ -182,7 +196,7 @@ export default function Pantry() {
         ))}
       </ul>
 
-      <form onSubmit={addItem} style={{ marginTop: "20px" }}>
+      <form onSubmit={addItem} style={{ marginTop: "20px", width: "100%" }}>
         <input
           type="text"
           placeholder="Item name"
@@ -219,6 +233,7 @@ export default function Pantry() {
           gap: "20px",
           flexWrap: "wrap",
           marginTop: "20px",
+          width: "100%",     // 🔹 Full width container
         }}
       >
         {recipes.map((r, idx) => (

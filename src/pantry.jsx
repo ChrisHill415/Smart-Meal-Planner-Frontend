@@ -13,83 +13,100 @@ export default function Pantry() {
 
   const navigate = useNavigate();
 
-  // 🔹 Logout function
+  // 🔹 Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/"); // back to Home
+    navigate("/");
   };
 
-  // Fetch pantry items on mount
+  // 🔹 Get Supabase access token
+  const getToken = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token;
+  };
+
+  // 🔹 Fetch pantry items
   useEffect(() => {
     fetchItems();
   }, []);
 
   async function fetchItems() {
+    setError(null);
     try {
-      const { data, error } = await supabase
-        .from("pantry")
-        .select("*")
-        .order("id", { ascending: true });
+      const token = await getToken();
+      if (!token) throw new Error("Not logged in");
 
-      if (error) setError(error.message);
-      else setItems(data || []);
+      const res = await fetch("https://smart-meal-planner-backend.onrender.com/pantry/list", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to fetch pantry");
+      setItems(data);
     } catch (err) {
       setError(err.message);
     }
   }
 
+  // 🔹 Add pantry item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
-
-    if (!item || !quantity) {
-      return setError("Enter item and quantity.");
-    }
+    if (!item || !quantity) return setError("Enter item and quantity.");
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) return setError("User not logged in.");
+      const token = await getToken();
+      if (!token) throw new Error("Not logged in");
 
-      const { error } = await supabase.from("pantry").insert([
-        {
+      const res = await fetch("https://smart-meal-planner-backend.onrender.com/pantry/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
           item: item.trim(),
           quantity: Number(quantity),
           unit: unit.trim() || "",
-          user_id: user.id, // 🔹 Required for RLS
-        },
-      ]);
+        }),
+      });
 
-      if (error) setError(error.message);
-      else {
-        setItem("");
-        setQuantity("");
-        setUnit("");
-        fetchItems();
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to add item");
+
+      setItem("");
+      setQuantity("");
+      setUnit("");
+      fetchItems();
     } catch (err) {
       setError(err.message);
     }
   }
 
-  async function removeItem(itemId, removeQty) {
+  // 🔹 Remove partial or full quantity
+  async function removeQuantity(itemId, currentQty, removeQty) {
+    if (removeQty <= 0) return;
+
     setError(null);
     try {
-      const { data } = await supabase
-        .from("pantry")
-        .select("*")
-        .eq("id", itemId)
-        .single();
+      const token = await getToken();
+      if (!token) throw new Error("Not logged in");
 
-      const newQuantity = Number(data.quantity) - removeQty;
-
-      if (newQuantity > 0) {
-        await supabase
-          .from("pantry")
-          .update({ quantity: newQuantity })
-          .eq("id", data.id);
+      let res;
+      if (currentQty - removeQty > 0) {
+        // Update quantity
+        res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/update/${itemId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ quantity: currentQty - removeQty }),
+        });
       } else {
-        await supabase.from("pantry").delete().eq("id", data.id);
+        // Delete item
+        res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/remove/${itemId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to remove item");
 
       fetchItems();
     } catch (err) {
@@ -97,128 +114,65 @@ export default function Pantry() {
     }
   }
 
+  // 🔹 Get recipes
   async function handleGetRecipes() {
-    if (items.length === 0) {
-      setRecipes([{ title: "Add pantry items first", instructions: "" }]);
-      return;
-    }
-
     setLoading(true);
     setError(null);
-
     try {
-      const response = await fetch(
-        "https://smart-meal-planner-backend.onrender.com/api/recipes"
-        );
-      const aiText = await response.text();
-      const splitRecipes = aiText
+      const token = await getToken();
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch("https://smart-meal-planner-backend.onrender.com/api/recipes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to fetch recipes");
+
+      const splitRecipes = data.recipes
         .split("### Recipe:")
         .filter(Boolean)
         .map((r) => r.trim());
 
-      const formatted = splitRecipes.map((r, idx) => ({
-        title: `Recipe ${idx + 1}`,
-        instructions: r.trim(),
-      }));
-
-      setRecipes(formatted);
+      setRecipes(splitRecipes.map((r, idx) => ({ title: `Recipe ${idx + 1}`, instructions: r })));
     } catch (err) {
       setRecipes([{ title: "Error", instructions: "Failed to fetch recipes." }]);
-      setError("Failed to fetch AI recipes.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  const groupedItems = items.map((item) => ({
-    id: item.id,
-    name: item.item,
-    quantity: item.quantity,
-    unit: item.unit,
-  }));
-
   return (
-    <div
-      style={{
-        width: "100vw",          // 🔹 Full width
-        minHeight: "100vh",      // 🔹 Full height
-        boxSizing: "border-box",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      {/* 🔹 Top bar with Logout */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-          width: "100%",
-        }}
-      >
+    <div style={{ width: "100vw", minHeight: "100vh", padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
         <h2>Pantry Items</h2>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: "8px 15px",
-            borderRadius: "5px",
-            border: "none",
-            backgroundColor: "#e53935",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
+        <button onClick={handleLogout} style={{ padding: "8px 15px", borderRadius: "5px", border: "none", backgroundColor: "#e53935", color: "white", cursor: "pointer" }}>Logout</button>
       </div>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <ul style={{ width: "100%", padding: 0 }}>
-        {groupedItems.map((item) => (
-          <li key={item.id} style={{ marginBottom: "10px" }}>
-            {item.name} — {item.quantity} {item.unit}{" "}
+      <ul>
+        {items.map((item) => (
+          <li key={item.id}>
+            {item.item} — {item.quantity} {item.unit}
             <select
-              onChange={(e) => {
-                const qty = Number(e.target.value);
-                if (qty === 0) return;
-                removeItem(item.id, qty);
-              }}
+              onChange={(e) => removeQuantity(item.id, item.quantity, Number(e.target.value))}
+              style={{ marginLeft: "10px" }}
             >
               <option value={0}>Remove...</option>
               {Array.from({ length: item.quantity }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
+                <option key={num} value={num}>{num}</option>
               ))}
             </select>
           </li>
         ))}
       </ul>
 
-      <form onSubmit={addItem} style={{ marginTop: "20px", width: "100%" }}>
-        <input
-          type="text"
-          placeholder="Item name"
-          value={item}
-          onChange={(e) => setItem(e.target.value)}
-          style={{ marginRight: "10px" }}
-        />
-        <input
-          type="text"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          style={{ marginRight: "10px" }}
-        />
-        <input
-          type="text"
-          placeholder="Unit (optional)"
-          value={unit}
-          onChange={(e) => setUnit(e.target.value)}
-          style={{ marginRight: "10px" }}
-        />
+      <form onSubmit={addItem} style={{ marginTop: "20px" }}>
+        <input type="text" placeholder="Item name" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: "10px" }} />
+        <input type="text" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: "10px" }} />
+        <input type="text" placeholder="Unit (optional)" value={unit} onChange={(e) => setUnit(e.target.value)} style={{ marginRight: "10px" }} />
         <button type="submit">Add Item</button>
       </form>
 
@@ -228,29 +182,9 @@ export default function Pantry() {
         </button>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          flexWrap: "wrap",
-          marginTop: "20px",
-          width: "100%",     // 🔹 Full width container
-        }}
-      >
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "20px" }}>
         {recipes.map((r, idx) => (
-          <div
-            key={idx}
-            style={{
-              backgroundColor: "#333",
-              color: "#fff",
-              border: "1px solid #555",
-              padding: "15px",
-              borderRadius: "8px",
-              whiteSpace: "pre-wrap",
-              flex: "1 1 300px",
-              minWidth: "250px",
-            }}
-          >
+          <div key={idx} style={{ backgroundColor: "#333", color: "#fff", border: "1px solid #555", padding: "15px", borderRadius: "8px", whiteSpace: "pre-wrap", flex: "1 1 300px", minWidth: "250px" }}>
             <h3>{r.title}</h3>
             <p>{r.instructions}</p>
           </div>

@@ -1,21 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { supabase } from "./supabase";
 
 export default function Home({ onGetStarted }) {
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-    if (error) console.error("Login error:", error.message);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  // Signup
+  const handleSignup = async () => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) setMessage(error.message);
+    else setMessage("Check your email to confirm signup!");
   };
 
-  const handleSignup = async () => {
-    // You can handle signup differently if you want,
-    // here we’ll just use Google OAuth for demo.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-    if (error) console.error("Signup error:", error.message);
+  // Login
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setMessage(error.message);
+    else setMessage("Logged in successfully!");
   };
 
   return (
@@ -29,25 +31,47 @@ export default function Home({ onGetStarted }) {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* Top Nav */}
+      {/* 🔹 Top Bar with Email/Password Login */}
       <div
         style={{
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",
-          padding: "20px",
+          padding: "15px 30px",
           backgroundColor: "#f8f8f8",
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          gap: "10px",
         }}
       >
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+          }}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{
+            padding: "8px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+          }}
+        />
         <button
           onClick={handleLogin}
           style={{
-            padding: "8px 16px",
-            marginRight: "10px",
-            border: "1px solid #4CAF50",
-            background: "transparent",
-            color: "#4CAF50",
+            padding: "8px 14px",
+            backgroundColor: "#4CAF50",
+            color: "#fff",
+            border: "none",
             borderRadius: "5px",
             cursor: "pointer",
           }}
@@ -57,8 +81,8 @@ export default function Home({ onGetStarted }) {
         <button
           onClick={handleSignup}
           style={{
-            padding: "8px 16px",
-            backgroundColor: "#4CAF50",
+            padding: "8px 14px",
+            backgroundColor: "#2196F3",
             color: "#fff",
             border: "none",
             borderRadius: "5px",
@@ -69,7 +93,7 @@ export default function Home({ onGetStarted }) {
         </button>
       </div>
 
-      {/* Main Content */}
+      {/* 🔹 Main Landing Content */}
       <div
         style={{
           flex: 1,
@@ -108,6 +132,10 @@ export default function Home({ onGetStarted }) {
         >
           Get Started
         </button>
+
+        {message && (
+          <p style={{ marginTop: "20px", color: "red" }}>{message}</p>
+        )}
       </div>
     </div>
   );

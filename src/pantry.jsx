@@ -107,9 +107,10 @@ export default function Pantry() {
     setError(null);
 
     try {
-      const response = await fetch("/api/recipes");
+      const response = await fetch(
+        "https://smart-meal-planner-backend.onrender.com/api/recipes"
+        );
       const aiText = await response.text();
-
       const splitRecipes = aiText
         .split("### Recipe:")
         .filter(Boolean)

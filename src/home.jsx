@@ -9,17 +9,16 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Reset CSS for full screen and consistent sizing
     document.body.style.margin = "0";
     document.body.style.padding = "0";
     document.body.style.height = "100%";
     document.body.style.width = "100%";
-    document.body.style.backgroundColor = "#f8f8f8"; // Full-screen background
+    document.body.style.backgroundColor = "#f8f8f8";
     document.documentElement.style.margin = "0";
     document.documentElement.style.padding = "0";
     document.documentElement.style.height = "100%";
     document.documentElement.style.width = "100%";
-    document.documentElement.style.backgroundColor = "#f8f8f8"; // Full-screen background
+    document.documentElement.style.backgroundColor = "#f8f8f8";
   }, []);
 
   const handleSignup = async () => {
@@ -64,12 +63,15 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         fontFamily: "Arial, sans-serif",
-        backgroundColor: "#f8f8f8", // Container background
+        backgroundColor: "#f8f8f8",
       }}
     >
-      {/* Top bar */}
+      {/* Sticky top bar */}
       <div
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",

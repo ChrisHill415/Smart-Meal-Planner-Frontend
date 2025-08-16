@@ -13,22 +13,17 @@ export default function Pantry() {
 
   const navigate = useNavigate();
 
-  // 🔹 Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  // 🔹 Get Supabase access token
   const getToken = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token;
   };
 
-  // 🔹 Fetch pantry items
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  useEffect(() => { fetchItems(); }, []);
 
   async function fetchItems() {
     setError(null);
@@ -39,7 +34,6 @@ export default function Pantry() {
       const res = await fetch("https://smart-meal-planner-backend.onrender.com/pantry/list", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to fetch pantry");
       setItems(data);
@@ -48,7 +42,6 @@ export default function Pantry() {
     }
   }
 
-  // 🔹 Add pantry item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
@@ -71,7 +64,8 @@ export default function Pantry() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to add item");
 
-      setItems((prev) => [...prev, data[0]]);
+      // Insert the newly added item into local state
+      setItems((prev) => [...prev, data[0] || data]);
       setItem("");
       setQuantity("");
       setUnit("");
@@ -80,14 +74,12 @@ export default function Pantry() {
     }
   }
 
-  // 🔹 Remove partial or full quantity (update local state immediately)
   async function removeQuantity(itemId, removeQty) {
     if (removeQty <= 0) return;
     setError(null);
 
     const itemIndex = items.findIndex((i) => i.id === itemId);
     if (itemIndex === -1) return;
-
     const currentQty = items[itemIndex].quantity;
     const newQty = currentQty - removeQty;
 
@@ -95,30 +87,28 @@ export default function Pantry() {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
 
-      let res;
+      let res, data;
       if (newQty > 0) {
-        // PATCH quantity
         res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/update/${itemId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ quantity: newQty }),
         });
+        data = await res.json();
       } else {
-        // DELETE item
         res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/remove/${itemId}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
+        data = await res.json();
       }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to remove item");
+      if (!res.ok) throw new Error(data.detail || "Failed to update/remove item");
 
-      // 🔹 Update local state without refetching
       setItems((prev) => {
         const updated = [...prev];
-        if (newQty > 0) updated[itemIndex].quantity = newQty;
-        else updated.splice(itemIndex, 1); // remove item
+        if (newQty > 0 && data.item) updated[itemIndex] = data.item;
+        else updated.splice(itemIndex, 1);
         return updated;
       });
     } catch (err) {
@@ -126,7 +116,6 @@ export default function Pantry() {
     }
   }
 
-  // 🔹 Get recipes
   async function handleGetRecipes() {
     setLoading(true);
     setError(null);
@@ -137,7 +126,6 @@ export default function Pantry() {
       const res = await fetch("https://smart-meal-planner-backend.onrender.com/api/recipes", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to fetch recipes");
 

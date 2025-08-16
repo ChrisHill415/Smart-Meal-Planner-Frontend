@@ -1,28 +1,28 @@
 import React, { useState } from "react";
 import { supabase } from "./supabase";
-import { useNavigate } from "react-router-dom"; // for redirect
+import { useNavigate } from "react-router-dom";
 
-export default function Home({ onGetStarted }) {
+export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // Signup
+  // Handle signup
   const handleSignup = async () => {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) setMessage(error.message);
     else setMessage("Check your email to confirm signup!");
   };
 
-  // Login
+  // Handle login
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setMessage(error.message);
     } else {
-      // ✅ go to pantry after login
-      navigate("/pantry");
+      setMessage("");
+      navigate("/pantry"); // ✅ Redirect to Pantry.jsx
     }
   };
 
@@ -30,23 +30,22 @@ export default function Home({ onGetStarted }) {
     <div
       style={{
         height: "100vh",
-        width: "100vw",
+        width: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#fff",
+        backgroundColor: "#f8f8f8",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* 🔹 Top Bar with Email/Password Login */}
+      {/* Top bar */}
       <div
         style={{
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "center",
           padding: "15px 30px",
-          backgroundColor: "#f8f8f8",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          gap: "10px",
+          backgroundColor: "#fff",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
         }}
       >
         <input
@@ -55,10 +54,12 @@ export default function Home({ onGetStarted }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           style={{
-            padding: "8px",
-            width: "200px",           // 🔹 fixed width
-            borderRadius: "5px",
+            padding: "10px",
+            fontSize: "1rem",
             border: "1px solid #ccc",
+            borderRadius: "5px",
+            marginRight: "10px",
+            width: "200px", // ✅ fixed width
           }}
         />
         <input
@@ -67,16 +68,19 @@ export default function Home({ onGetStarted }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={{
-            padding: "8px",
-            width: "200px",           // 🔹 same fixed width
-            borderRadius: "5px",
+            padding: "10px",
+            fontSize: "1rem",
             border: "1px solid #ccc",
+            borderRadius: "5px",
+            marginRight: "10px",
+            width: "200px", // ✅ same width as email
           }}
         />
         <button
           onClick={handleLogin}
           style={{
-            padding: "8px 14px",
+            padding: "10px 15px",
+            marginRight: "10px",
             backgroundColor: "#4CAF50",
             color: "#fff",
             border: "none",
@@ -89,7 +93,7 @@ export default function Home({ onGetStarted }) {
         <button
           onClick={handleSignup}
           style={{
-            padding: "8px 14px",
+            padding: "10px 15px",
             backgroundColor: "#2196F3",
             color: "#fff",
             border: "none",
@@ -101,49 +105,28 @@ export default function Home({ onGetStarted }) {
         </button>
       </div>
 
-      {/* 🔹 Main Landing Content */}
+      {/* Intro content in center */}
       <div
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
           alignItems: "center",
+          justifyContent: "center",
           textAlign: "center",
-          padding: "40px",
+          padding: "20px",
         }}
       >
-        <h1 style={{ fontSize: "3rem", marginBottom: "20px", color: "#333" }}>
+        <h1 style={{ fontSize: "3rem", marginBottom: "30px", color: "#333" }}>
           Smart Meal Planner
         </h1>
-
-        <h2 style={{ marginBottom: "20px", color: "#555" }}>Our Mission</h2>
-        <p style={{ fontSize: "1.2rem", lineHeight: "1.8", color: "#666", maxWidth: "800px" }}>
+        <p style={{ maxWidth: "600px", fontSize: "1.2rem", color: "#555" }}>
           At Smart Meal Planner, our goal is to help you make the most of your
           pantry ingredients by providing easy, creative recipes. We aim to
           reduce food waste, save time, and inspire delicious meals for every
           day.
         </p>
-
-        <button
-          onClick={onGetStarted}
-          style={{
-            marginTop: "30px",
-            padding: "12px 24px",
-            fontSize: "1.1rem",
-            borderRadius: "5px",
-            border: "none",
-            backgroundColor: "#4CAF50",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          Get Started
-        </button>
-
-        {message && (
-          <p style={{ marginTop: "20px", color: "red" }}>{message}</p>
-        )}
+        {message && <p style={{ color: "red", marginTop: "20px" }}>{message}</p>}
       </div>
     </div>
   );

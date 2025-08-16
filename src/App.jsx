@@ -1,8 +1,73 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import Home from "./home";
 import Pantry from "./pantry";
 import { supabase } from "./supabase";
+
+// 🔹 Home Component
+function Home({ onGetStarted }) {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "Arial, sans-serif",
+        backgroundColor: "#f8f8f8",
+      }}
+    >
+      {/* Top bar empty when not logged in */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1000,
+          height: "60px",
+        }}
+      ></div>
+
+      {/* Center content */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          width: "100%",
+          padding: "20px",
+          boxSizing: "border-box",
+        }}
+      >
+        <h1 style={{ fontSize: "3rem", marginBottom: "30px", color: "#333" }}>
+          Smart Meal Planner
+        </h1>
+        <p style={{ maxWidth: "800px", fontSize: "1.2rem", color: "#555" }}>
+          At Smart Meal Planner, our goal is to help you make the most of your
+          pantry ingredients by providing easy, creative recipes. We aim to
+          reduce food waste, save time, and inspire delicious meals for every
+          day.
+        </p>
+        <button
+          onClick={onGetStarted}
+          style={{
+            marginTop: "30px",
+            padding: "12px 25px",
+            fontSize: "1rem",
+            borderRadius: "5px",
+            border: "none",
+            backgroundColor: "#4CAF50",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Get Started
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // 🔹 Login Component
 function Login() {
@@ -89,7 +154,7 @@ function Login() {
         </button>
       </div>
 
-      {/* Intro / center content */}
+      {/* Center content */}
       <div
         style={{
           flex: 1,
@@ -103,15 +168,9 @@ function Login() {
           boxSizing: "border-box",
         }}
       >
-        <h1 style={{ fontSize: "3rem", marginBottom: "30px", color: "#333" }}>
-          Smart Meal Planner
+        <h1 style={{ fontSize: "2rem", marginBottom: "20px", color: "#333" }}>
+          Welcome! Enter your email and password above to get started.
         </h1>
-        <p style={{ maxWidth: "800px", fontSize: "1.2rem", color: "#555" }}>
-          At Smart Meal Planner, our goal is to help you make the most of your
-          pantry ingredients by providing easy, creative recipes. We aim to
-          reduce food waste, save time, and inspire delicious meals for every
-          day.
-        </p>
         {message && <p style={{ color: "red", marginTop: "20px" }}>{message}</p>}
       </div>
     </div>
@@ -122,9 +181,7 @@ function Login() {
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
 
-  const handleGetStarted = () => {
-    setShowLogin(true);
-  };
+  const handleGetStarted = () => setShowLogin(true);
 
   return (
     <Router>

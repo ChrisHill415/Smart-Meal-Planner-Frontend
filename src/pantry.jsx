@@ -7,6 +7,8 @@ export default function Pantry() {
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("");
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // ✅ Get auth token for RLS
   async function getToken() {
@@ -15,8 +17,10 @@ export default function Pantry() {
     return data.session.access_token;
   }
 
-  // ✅ Fetch pantry items for current user
+  // ✅ Fetch pantry items
   async function fetchItems() {
+    setLoading(true);
+    setError(null);
     try {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
@@ -31,18 +35,23 @@ export default function Pantry() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to fetch pantry");
 
-      console.log("Fetched pantry:", data);
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  // ✅ Add a new pantry item
+  // ✅ Add new pantry item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
-    if (!item || !quantity) return setError("Enter item and quantity.");
+    setMessage(null);
+
+    if (!item.trim() || !quantity) {
+      return setError("Enter item and quantity.");
+    }
 
     try {
       const token = await getToken();
@@ -67,18 +76,15 @@ export default function Pantry() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to add item");
 
-      console.log("Add item response:", data);
-
-      // ✅ Handle both array or object response
       const newItem = Array.isArray(data) ? data[0] : data;
 
       if (newItem) {
         setItems((prev) => [...prev, newItem]);
       } else {
-        // fallback: refresh whole list
-        await fetchItems();
+        await fetchItems(); // fallback
       }
 
+      setMessage(`✅ Added ${item}`);
       setItem("");
       setQuantity("");
       setUnit("");
@@ -87,8 +93,14 @@ export default function Pantry() {
     }
   }
 
-  // ✅ Remove pantry item
+  // ✅ Remove pantry item (optimistic UI)
   async function removeItem(id) {
+    setError(null);
+    setMessage(null);
+
+    const prevItems = [...items];
+    setItems((prev) => prev.filter((i) => i.id !== id));
+
     try {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
@@ -106,22 +118,25 @@ export default function Pantry() {
         throw new Error(data.detail || "Failed to remove item");
       }
 
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      setMessage("🗑️ Item removed");
     } catch (err) {
       setError(err.message);
+      setItems(prevItems); // rollback
     }
   }
 
-  // ✅ Load items on mount
+  // ✅ Load on mount
   useEffect(() => {
     fetchItems();
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>My Pantry</h1>
+    <div style={{ padding: "20px", maxWidth: "500px", margin: "auto" }}>
+      <h1>🥫 My Pantry</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
+      {message && <p style={{ color: "green" }}>{message}</p>}
+      {loading && <p>Loading pantry...</p>}
 
       {/* Add Item Form */}
       <form onSubmit={addItem} style={{ marginBottom: "20px" }}>
@@ -136,31 +151,61 @@ export default function Pantry() {
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="Quantity"
           type="number"
-          style={{ marginRight: "10px" }}
+          style={{ marginRight: "10px", width: "80px" }}
         />
         <input
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
           placeholder="Unit (optional)"
-          style={{ marginRight: "10px" }}
+          style={{ marginRight: "10px", width: "120px" }}
         />
-        <button type="submit">Add</button>
+        <button type="submit" disabled={!item.trim() || !quantity}>
+          Add
+        </button>
       </form>
 
       {/* Pantry List */}
-      <ul>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {items.length === 0 && !loading && <p>No items in pantry yet.</p>}
         {items.map((i) => (
-          <li key={i.id}>
-            {i.item} — {i.quantity} {i.unit}
-            <button
-              onClick={() => removeItem(i.id)}
-              style={{ marginLeft: "10px" }}
-            >
-              Remove
-            </button>
-          </li>
+          <PantryItem key={i.id} item={i} onRemove={removeItem} />
         ))}
       </ul>
     </div>
+  );
+}
+
+// ✅ Small reusable component
+function PantryItem({ item, onRemove }) {
+  return (
+    <li
+      style={{
+        marginBottom: "8px",
+        padding: "8px",
+        border: "1px solid #ccc",
+        borderRadius: "6px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <span>
+        {item.item} — {item.quantity}
+        {item.unit ? ` ${item.unit}` : ""}
+      </span>
+      <button
+        onClick={() => onRemove(item.id)}
+        style={{
+          background: "red",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          padding: "4px 8px",
+          cursor: "pointer",
+        }}
+      >
+        Remove
+      </button>
+    </li>
   );
 }

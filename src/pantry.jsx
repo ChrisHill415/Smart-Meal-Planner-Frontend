@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabase";
-import { useNavigate } from "react-router-dom";
 
 export default function Pantry() {
   const [items, setItems] = useState([]);
@@ -8,40 +7,38 @@ export default function Pantry() {
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("");
   const [error, setError] = useState(null);
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  // ✅ Get auth token for RLS
+  async function getToken() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session) return null;
+    return data.session.access_token;
+  }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
-
-  const getToken = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token;
-  };
-
-  useEffect(() => { fetchItems(); }, []);
-
+  // ✅ Fetch pantry items for current user
   async function fetchItems() {
-    setError(null);
     try {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
 
-      const res = await fetch("https://smart-meal-planner-backend.onrender.com/pantry/list", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        "https://smart-meal-planner-backend.onrender.com/pantry/list",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to fetch pantry");
-      setItems(data);
+
+      console.log("Fetched pantry:", data);
+      setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
     }
   }
 
+  // ✅ Add a new pantry item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
@@ -51,21 +48,37 @@ export default function Pantry() {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
 
-      const res = await fetch("https://smart-meal-planner-backend.onrender.com/pantry/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          item: item.trim(),
-          quantity: Number(quantity),
-          unit: unit.trim() || "",
-        }),
-      });
+      const res = await fetch(
+        "https://smart-meal-planner-backend.onrender.com/pantry/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            item: item.trim(),
+            quantity: Number(quantity),
+            unit: unit.trim() || "",
+          }),
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to add item");
 
-      // Insert the newly added item into local state
-      setItems((prev) => [...prev, data[0] || data]);
+      console.log("Add item response:", data);
+
+      // ✅ Handle both array or object response
+      const newItem = Array.isArray(data) ? data[0] : data;
+
+      if (newItem) {
+        setItems((prev) => [...prev, newItem]);
+      } else {
+        // fallback: refresh whole list
+        await fetchItems();
+      }
+
       setItem("");
       setQuantity("");
       setUnit("");
@@ -74,122 +87,80 @@ export default function Pantry() {
     }
   }
 
-  async function removeQuantity(itemId, removeQty) {
-    if (removeQty <= 0) return;
-    setError(null);
-
-    const itemIndex = items.findIndex((i) => i.id === itemId);
-    if (itemIndex === -1) return;
-    const currentQty = items[itemIndex].quantity;
-    const newQty = currentQty - removeQty;
-
+  // ✅ Remove pantry item
+  async function removeItem(id) {
     try {
       const token = await getToken();
       if (!token) throw new Error("Not logged in");
 
-      let res, data;
-      if (newQty > 0) {
-        res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/update/${itemId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ quantity: newQty }),
-        });
-        data = await res.json();
-      } else {
-        res = await fetch(`https://smart-meal-planner-backend.onrender.com/pantry/remove/${itemId}`, {
+      const res = await fetch(
+        `https://smart-meal-planner-backend.onrender.com/pantry/remove/${id}`,
+        {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
-        });
-        data = await res.json();
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to remove item");
       }
 
-      if (!res.ok) throw new Error(data.detail || "Failed to update/remove item");
-
-      setItems((prev) => {
-        const updated = [...prev];
-        if (newQty > 0 && data.item) updated[itemIndex] = data.item;
-        else updated.splice(itemIndex, 1);
-        return updated;
-      });
+      setItems((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
       setError(err.message);
     }
   }
 
-  async function handleGetRecipes() {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not logged in");
-
-      const res = await fetch("https://smart-meal-planner-backend.onrender.com/api/recipes", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to fetch recipes");
-
-      const splitRecipes = data.recipes
-        .split("### Recipe:")
-        .filter(Boolean)
-        .map((r) => r.trim());
-
-      setRecipes(splitRecipes.map((r, idx) => ({ title: `Recipe ${idx + 1}`, instructions: r })));
-    } catch (err) {
-      setRecipes([{ title: "Error", instructions: "Failed to fetch recipes." }]);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // ✅ Load items on mount
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   return (
-    <div style={{ width: "100vw", minHeight: "100vh", padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
-        <h2>Pantry Items</h2>
-        <button onClick={handleLogout} style={{ padding: "8px 15px", borderRadius: "5px", border: "none", backgroundColor: "#e53935", color: "white", cursor: "pointer" }}>Logout</button>
-      </div>
+    <div style={{ padding: "20px" }}>
+      <h1>My Pantry</h1>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
+      {/* Add Item Form */}
+      <form onSubmit={addItem} style={{ marginBottom: "20px" }}>
+        <input
+          value={item}
+          onChange={(e) => setItem(e.target.value)}
+          placeholder="Item"
+          style={{ marginRight: "10px" }}
+        />
+        <input
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          placeholder="Quantity"
+          type="number"
+          style={{ marginRight: "10px" }}
+        />
+        <input
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          placeholder="Unit (optional)"
+          style={{ marginRight: "10px" }}
+        />
+        <button type="submit">Add</button>
+      </form>
+
+      {/* Pantry List */}
       <ul>
-        {items.map((item) => (
-          <li key={item.id}>
-            {item.item} — {item.quantity} {item.unit}
-            <select
-              onChange={(e) => removeQuantity(item.id, Number(e.target.value))}
+        {items.map((i) => (
+          <li key={i.id}>
+            {i.item} — {i.quantity} {i.unit}
+            <button
+              onClick={() => removeItem(i.id)}
               style={{ marginLeft: "10px" }}
             >
-              <option value={0}>Remove...</option>
-              {Array.from({ length: item.quantity }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num}>{num}</option>
-              ))}
-            </select>
+              Remove
+            </button>
           </li>
         ))}
       </ul>
-
-      <form onSubmit={addItem} style={{ marginTop: "20px" }}>
-        <input type="text" placeholder="Item name" value={item} onChange={(e) => setItem(e.target.value)} style={{ marginRight: "10px" }} />
-        <input type="text" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={{ marginRight: "10px" }} />
-        <input type="text" placeholder="Unit (optional)" value={unit} onChange={(e) => setUnit(e.target.value)} style={{ marginRight: "10px" }} />
-        <button type="submit">Add Item</button>
-      </form>
-
-      <div style={{ marginTop: "30px" }}>
-        <button onClick={handleGetRecipes} disabled={loading}>
-          {loading ? "Fetching Recipes..." : "Get Recipes"}
-        </button>
-      </div>
-
-      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "20px" }}>
-        {recipes.map((r, idx) => (
-          <div key={idx} style={{ backgroundColor: "#333", color: "#fff", border: "1px solid #555", padding: "15px", borderRadius: "8px", whiteSpace: "pre-wrap", flex: "1 1 300px", minWidth: "250px" }}>
-            <h3>{r.title}</h3>
-            <p>{r.instructions}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

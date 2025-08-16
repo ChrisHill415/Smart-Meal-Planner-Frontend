@@ -27,9 +27,7 @@ export default function Pantry() {
 
       const res = await fetch(
         "https://smart-meal-planner-backend.onrender.com/pantry/list",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const data = await res.json();
@@ -43,7 +41,7 @@ export default function Pantry() {
     }
   }
 
-  // ✅ Add new pantry item
+  // ✅ Add new item
   async function addItem(e) {
     e.preventDefault();
     setError(null);
@@ -77,12 +75,7 @@ export default function Pantry() {
       if (!res.ok) throw new Error(data.detail || "Failed to add item");
 
       const newItem = Array.isArray(data) ? data[0] : data;
-
-      if (newItem) {
-        setItems((prev) => [...prev, newItem]);
-      } else {
-        await fetchItems(); // fallback
-      }
+      setItems((prev) => [...prev, newItem]);
 
       setMessage(`✅ Added ${item}`);
       setItem("");
@@ -93,7 +86,7 @@ export default function Pantry() {
     }
   }
 
-  // ✅ Remove pantry item (optimistic UI)
+  // ✅ Remove item
   async function removeItem(id) {
     setError(null);
     setMessage(null);
@@ -125,7 +118,44 @@ export default function Pantry() {
     }
   }
 
-  // ✅ Load on mount
+  // ✅ Update item (edit mode save)
+  async function updateItem(id, updates) {
+    setError(null);
+    setMessage(null);
+
+    const prevItems = [...items];
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...updates } : i))
+    );
+
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch(
+        `https://smart-meal-planner-backend.onrender.com/pantry/update/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updates),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to update item");
+      }
+
+      setMessage("✏️ Item updated");
+    } catch (err) {
+      setError(err.message);
+      setItems(prevItems); // rollback
+    }
+  }
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -168,15 +198,35 @@ export default function Pantry() {
       <ul style={{ listStyle: "none", padding: 0 }}>
         {items.length === 0 && !loading && <p>No items in pantry yet.</p>}
         {items.map((i) => (
-          <PantryItem key={i.id} item={i} onRemove={removeItem} />
+          <PantryItem
+            key={i.id}
+            item={i}
+            onRemove={removeItem}
+            onUpdate={updateItem}
+          />
         ))}
       </ul>
     </div>
   );
 }
 
-// ✅ Small reusable component
-function PantryItem({ item, onRemove }) {
+// ✅ Pantry item with editable name, quantity, unit
+function PantryItem({ item, onRemove, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(item.item);
+  const [editQuantity, setEditQuantity] = useState(item.quantity);
+  const [editUnit, setEditUnit] = useState(item.unit || "");
+
+  const saveEdit = () => {
+    if (!editName.trim() || !editQuantity) return;
+    onUpdate(item.id, {
+      item: editName.trim(),
+      quantity: Number(editQuantity),
+      unit: editUnit.trim(),
+    });
+    setIsEditing(false);
+  };
+
   return (
     <li
       style={{
@@ -189,23 +239,60 @@ function PantryItem({ item, onRemove }) {
         alignItems: "center",
       }}
     >
+      {isEditing ? (
+        <span>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            style={{ width: "100px", marginRight: "5px" }}
+          />
+          <input
+            type="number"
+            value={editQuantity}
+            onChange={(e) => setEditQuantity(e.target.value)}
+            style={{ width: "60px", marginRight: "5px" }}
+          />
+          <input
+            type="text"
+            value={editUnit}
+            onChange={(e) => setEditUnit(e.target.value)}
+            style={{ width: "80px", marginRight: "5px" }}
+            placeholder="Unit"
+          />
+        </span>
+      ) : (
+        <span>
+          {item.item} — {item.quantity}
+          {item.unit ? ` ${item.unit}` : ""}
+        </span>
+      )}
+
       <span>
-        {item.item} — {item.quantity}
-        {item.unit ? ` ${item.unit}` : ""}
+        {isEditing ? (
+          <>
+            <button onClick={saveEdit} style={{ marginRight: "5px" }}>
+              💾 Save
+            </button>
+            <button onClick={() => setIsEditing(false)}>❌ Cancel</button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setIsEditing(true)}
+              style={{ marginRight: "5px" }}
+            >
+              ✏️ Edit
+            </button>
+            <button
+              onClick={() => onRemove(item.id)}
+              style={{ background: "red", color: "white", border: "none" }}
+            >
+              Remove
+            </button>
+          </>
+        )}
       </span>
-      <button
-        onClick={() => onRemove(item.id)}
-        style={{
-          background: "red",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          padding: "4px 8px",
-          cursor: "pointer",
-        }}
-      >
-        Remove
-      </button>
     </li>
   );
 }
